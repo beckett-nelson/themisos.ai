@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoverageIQ — Analysis Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F3EE;
+  --bg-card:#FFFFFF;
+  --bg-sidebar:#0D1B2E;
+  --navy:#07101E;
+  --navy-mid:#0D1B2E;
+  --navy-light:#1A2F4A;
+  --navy-border:#1E3355;
+  --amber:#C47D1E;
+  --amber-light:#D4892A;
+  --amber-bg:#FDF6EC;
+  --amber-border:#F0D4A0;
+  --red:#C0392B;
+  --red-bg:#FDF2F2;
+  --red-border:#F5C6C6;
+  --green:#1A7A4A;
+  --green-bg:#F0FAF5;
+  --green-border:#A8DFC0;
+  --blue:#1A5296;
+  --blue-bg:#EEF4FC;
+  --blue-border:#B8D0EE;
+  --text:#1A1A2E;
+  --text-mid:#4A5568;
+  --text-muted:#8A96A8;
+  --border:#E2DDD4;
+  --font-display:'Playfair Display',serif;
+  --font-ui:'Syne',sans-serif;
+  --font-mono:'DM Mono',monospace;
+  --radius:6px;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:var(--font-ui);
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  font-size:14px;
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:220px;flex-shrink:0;
+  background:var(--navy-mid);
+  display:flex;flex-direction:column;
+  height:100vh;
+  border-right:1px solid var(--navy-border);
+}
+.sidebar-logo{
+  padding:1.5rem 1.25rem 1rem;
+  display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid var(--navy-border);
+}
+.logo-mark{
+  width:26px;height:26px;background:var(--amber-light);
+  border-radius:4px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:9px;font-weight:500;color:var(--navy);
+  flex-shrink:0;
+}
+.logo-text{
+  font-family:var(--font-display);font-size:1rem;font-weight:700;
+  color:#F0EAD6;letter-spacing:-0.01em;
+}
+.sidebar-nav{
+  padding:1rem 0.75rem;flex:1;display:flex;flex-direction:column;gap:2px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:0.6rem 0.75rem;border-radius:4px;
+  font-size:0.8125rem;font-weight:500;color:#8A96A8;
+  cursor:pointer;transition:all .15s;
+  border:none;background:none;width:100%;text-align:left;
+}
+.nav-item:hover{background:rgba(255,255,255,0.06);color:#C8D4E0}
+.nav-item.active{background:rgba(212,137,42,0.15);color:#D4892A}
+.nav-icon{font-size:1rem;width:18px;text-align:center}
+.sidebar-footer{
+  padding:1rem;border-top:1px solid var(--navy-border);
+}
+.sidebar-source{
+  font-size:0.6875rem;font-weight:500;letter-spacing:0.06em;
+  text-transform:uppercase;color:#4A5F78;margin-bottom:0.625rem;
+}
+.source-badge{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 8px;border-radius:3px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--navy-border);
+  font-size:0.6875rem;color:#8A96A8;margin-bottom:4px;cursor:pointer;
+  transition:border-color .15s;
+}
+.source-badge:hover{border-color:#4A5F78;color:#C8D4E0}
+.source-dot{width:6px;height:6px;border-radius:50%;background:#3A5A3A;flex-shrink:0}
+.source-dot.connected{background:#2ECC71}
+.source-dot.disconnected{background:#555}
+
+/* ── MAIN ── */
+.main{
+  flex:1;display:flex;flex-direction:column;
+  height:100vh;overflow:hidden;
+}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0.875rem 2rem;
+  border-bottom:1px solid var(--border);
+  background:var(--bg-card);flex-shrink:0;
+}
+.topbar-title{
+  font-size:0.875rem;font-weight:600;color:var(--text);
+}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.btn{
+  font-family:var(--font-ui);font-size:0.75rem;font-weight:600;
+  padding:0.5rem 1rem;border-radius:3px;cursor:pointer;
+  letter-spacing:0.02em;transition:all .15s;border:none;
+}
+.btn-outline{
+  background:transparent;color:var(--text-mid);
+  border:1px solid var(--border);
+}
+.btn-outline:hover{border-color:var(--amber);color:var(--amber)}
+.btn-primary{
+  background:var(--amber);color:white;
+}
+.btn-primary:hover{background:var(--amber-light)}
+
+.content{
+  flex:1;overflow-y:auto;
+  padding:2rem;
+  display:flex;flex-direction:column;gap:1.5rem;
+}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone{
+  border:2px dashed var(--border);
+  border-radius:var(--radius);
+  padding:3rem 2rem;
+  text-align:center;
+  background:var(--bg-card);
+  cursor:pointer;
+  transition:all .2s;
+  position:relative;
+}
+.upload-zone:hover,.upload-zone.drag{
+  border-color:var(--amber);
+  background:var(--amber-bg);
+}
+.upload-zone input{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;
+}
+.upload-icon{
+  font-size:2.5rem;margin-bottom:1rem;opacity:0.4;
+}
+.upload-title{
+  font-family:var(--font-display);font-size:1.25rem;font-weight:700;
+  color:var(--text);margin-bottom:0.5rem;
+}
+.upload-sub{
+  font-size:0.8125rem;color:var(--text-muted);line-height:1.6;
+}
+.upload-types{
+  display:flex;justify-content:center;gap:8px;margin-top:1.25rem;flex-wrap:wrap;
+}
+.type-chip{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  padding:3px 10px;border-radius:2px;
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--text-muted);
+}
+
+/* ── SOURCE SELECTOR ── */
+.source-selector{
+  background:var(--bg-card);
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.25rem 1.5rem;
+}
+.source-selector-title{
+  font-size:0.75rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:1rem;
+}
+.source-options{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;
+}
+.source-option{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:0.875rem;border-radius:4px;
+  border:1px solid var(--border);background:var(--bg);
+  cursor:pointer;transition:all .15s;
+}
+.source-option:hover{border-color:var(--amber-border);background:var(--amber-bg)}
+.source-option.active{border-color:var(--amber);background:var(--amber-bg)}
+.source-option-icon{font-size:1.25rem;flex-shrink:0;margin-top:1px}
+.source-option-name{font-size:0.8125rem;font-weight:600;color:var(--text);margin-bottom:2px}
+.source-option-desc{font-size:0.6875rem;color:var(--text-muted);line-height:1.4}
+
+/* ── PROCESSING ── */
+.processing{
+  display:none;
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:2rem;text-align:center;
+}
+.processing.active{display:block}
+.spinner{
+  width:40px;height:40px;margin:0 auto 1.25rem;
+  border:3px solid var(--border);
+  border-top-color:var(--amber);
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.processing-title{
+  font-family:var(--font-display);font-size:1.125rem;font-weight:700;
+  color:var(--text);margin-bottom:0.5rem;
+}
+.processing-steps{
+  display:flex;flex-direction:column;gap:6px;margin-top:1.25rem;
+  max-width:360px;margin-left:auto;margin-right:auto;
+}
+.proc-step{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 12px;border-radius:3px;
+  font-size:0.8125rem;color:var(--text-muted);
+  background:var(--bg);transition:all .3s;
+}
+.proc-step.done{color:var(--green);background:var(--green-bg)}
+.proc-step.running{color:var(--amber);background:var(--amber-bg)}
+.proc-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;
+}
+.proc-step.done .proc-dot{background:var(--green)}
+.proc-step.running .proc-dot{
+  background:var(--amber);
+  animation:pulse 1s ease infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ── RESULTS ── */
+.results{display:none;flex-direction:column;gap:1.25rem}
+.results.active{display:flex}
+
+.result-header{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.5rem;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;
+  flex-wrap:wrap;
+}
+.result-policy-name{
+  font-family:var(--font-display);font-size:1.375rem;font-weight:700;
+  color:var(--text);margin-bottom:4px;
+}
+.result-meta{
+  display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.5rem;
+}
+.meta-chip{
+  font-size:0.6875rem;font-weight:500;letter-spacing:0.04em;
+  padding:3px 10px;border-radius:2px;
+  border:1px solid var(--border);color:var(--text-muted);
+  background:var(--bg);
+}
+.recovery-amount{
+  text-align:right;
+}
+.recovery-label{
+  font-size:0.6875rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:4px;
+}
+.recovery-value{
+  font-family:var(--font-display);font-size:2rem;font-weight:700;
+  color:var(--green);line-height:1;
+}
+.recovery-sub{font-size:0.6875rem;color:var(--text-muted);margin-top:4px}
+
+.results-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;
+}
+@media(max-width:900px){.results-grid{grid-template-columns:1fr}}
+
+.result-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;
+}
+.card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0.875rem 1.25rem;
+  border-bottom:1px solid var(--border);
+}
+.card-title{
+  font-size:0.75rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--text-mid);display:flex;align-items:center;gap:8px;
+}
+.card-count{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  padding:2px 7px;border-radius:2px;
+  background:var(--bg);border:1px solid var(--border);color:var(--text-muted);
+}
+.card-body{padding:1.25rem;display:flex;flex-direction:column;gap:10px}
+
+/* Limits */
+.limit-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 0;border-bottom:1px solid var(--bg);
+}
+.limit-row:last-child{border-bottom:none}
+.limit-name{font-size:0.8125rem;color:var(--text-mid)}
+.limit-value{
+  font-family:var(--font-mono);font-size:0.875rem;font-weight:500;
+  color:var(--text);
+}
+.limit-page{
+  font-size:0.6875rem;color:var(--text-muted);margin-left:8px;
+}
+
+/* Flags */
+.flag-item{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:10px;border-radius:4px;
+  border-left:3px solid transparent;
+}
+.flag-item.high{background:var(--red-bg);border-color:var(--red)}
+.flag-item.medium{background:var(--amber-bg);border-color:var(--amber)}
+.flag-item.low{background:var(--blue-bg);border-color:var(--blue)}
+.flag-severity{
+  font-size:0.6rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;
+  padding:2px 6px;border-radius:2px;flex-shrink:0;margin-top:1px;
+}
+.flag-item.high .flag-severity{background:var(--red-border);color:var(--red)}
+.flag-item.medium .flag-severity{background:var(--amber-border);color:var(--amber)}
+.flag-item.low .flag-severity{background:var(--blue-border);color:var(--blue)}
+.flag-text{font-size:0.8125rem;color:var(--text-mid);line-height:1.5}
+.flag-page{font-size:0.6875rem;color:var(--text-muted);margin-top:3px}
+
+/* Exclusions */
+.exclusion-item{
+  padding:10px;border-radius:4px;
+  background:var(--bg);border:1px solid var(--border);
+}
+.exclusion-name{font-size:0.8125rem;font-weight:600;color:var(--text);margin-bottom:4px}
+.exclusion-text{font-size:0.75rem;color:var(--text-muted);line-height:1.5;font-style:italic}
+.exclusion-meta{
+  display:flex;gap:8px;margin-top:6px;
+}
+.ex-chip{
+  font-size:0.6rem;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;
+  padding:2px 7px;border-radius:2px;
+  background:var(--red-bg);border:1px solid var(--red-border);color:var(--red);
+}
+
+/* Recovery opps */
+.opp-item{
+  padding:12px;border-radius:4px;
+  background:var(--green-bg);border:1px solid var(--green-border);
+}
+.opp-theory{font-size:0.8125rem;font-weight:600;color:var(--green);margin-bottom:4px}
+.opp-exposure{
+  font-family:var(--font-mono);font-size:0.875rem;color:var(--text);margin-bottom:4px;
+}
+.opp-desc{font-size:0.75rem;color:var(--text-mid);line-height:1.5}
+.opp-confidence{
+  font-size:0.6rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  padding:2px 7px;border-radius:2px;margin-top:6px;display:inline-block;
+  background:var(--green-border);color:var(--green);
+}
+
+/* Endorsements */
+.endorsement-item{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:10px;border-radius:4px;background:var(--bg);border:1px solid var(--border);
+}
+.endorsement-effect{
+  font-size:0.6rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  padding:2px 6px;border-radius:2px;flex-shrink:0;margin-top:2px;
+}
+.broadening{background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7}
+.restricting{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.clarifying{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
+.endorsement-title{font-size:0.8125rem;font-weight:600;color:var(--text);margin-bottom:3px}
+.endorsement-summary{font-size:0.75rem;color:var(--text-muted);line-height:1.5}
+
+/* Source tag */
+.source-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:0.6rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;
+  padding:2px 8px;border-radius:2px;
+  background:var(--blue-bg);border:1px solid var(--blue-border);color:var(--blue);
+  margin-bottom:0.75rem;
+}
+
+/* Empty state */
+.empty-state{
+  text-align:center;padding:4rem 2rem;
+  display:flex;flex-direction:column;align-items:center;gap:1rem;
+}
+.empty-icon{font-size:3rem;opacity:0.2}
+.empty-title{
+  font-family:var(--font-display);font-size:1.25rem;font-weight:700;
+  color:var(--text);
+}
+.empty-sub{font-size:0.875rem;color:var(--text-muted);max-width:360px;line-height:1.6}
+
+/* Scrollbar */
+.content::-webkit-scrollbar{width:4px}
+.content::-webkit-scrollbar-track{background:transparent}
+.content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">IQ</div>
+    <span class="logo-text">CoverageIQ</span>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="nav-item active">
+      <span class="nav-icon">⊞</span> New Analysis
+    </button>
+    <button class="nav-item">
+      <span class="nav-icon">◫</span> My Matters
+    </button>
+    <button class="nav-item">
+      <span class="nav-icon">⟁</span> Policy Library
+    </button>
+    <button class="nav-item">
+      <span class="nav-icon">⊘</span> Reports
+    </button>
+    <button class="nav-item">
+      <span class="nav-icon">◈</span> AI Counsel
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-source">Data Sources</div>
+    <div class="source-badge">
+      <span class="source-dot connected"></span>
+      NAIC FDR
+    </div>
+    <div class="source-badge">
+      <span class="source-dot connected"></span>
+      NAIC Auto DB
+    </div>
+    <div class="source-badge">
+      <span class="source-dot disconnected"></span>
+      InsData
+    </div>
+    <div class="source-badge" style="margin-top:8px;border-style:dashed">
+      <span style="font-size:0.75rem">＋</span>
+      Add source
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">New Analysis</div>
+    <div class="topbar-actions">
+      <button class="btn btn-outline" onclick="resetUI()">Clear</button>
+      <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()" disabled>
+        Run Analysis
+      </button>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+
+    <!-- UPLOAD -->
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept=".pdf,.docx,.tiff,.tif"
+        onchange="handleFileSelect(this.files[0])">
+      <div class="upload-icon">📄</div>
+      <div class="upload-title">Drop your policy document here</div>
+      <div class="upload-sub">
+        Upload a PDF, Word document, or scanned image.<br>
+        CoverageIQ will extract all coverage data automatically.
+      </div>
+      <div class="upload-types">
+        <span class="type-chip">PDF</span>
+        <span class="type-chip">DOCX</span>
+        <span class="type-chip">TIFF</span>
+        <span class="type-chip">Scanned</span>
+      </div>
+    </div>
+
+    <!-- SOURCE SELECTOR -->
+    <div class="source-selector" id="sourceSelector">
+      <div class="source-selector-title">Additional data sources</div>
+      <div class="source-options">
+        <div class="source-option active" onclick="toggleSource(this)">
+          <span class="source-option-icon">🏛</span>
+          <div>
+            <div class="source-option-name">NAIC FDR</div>
+            <div class="source-option-desc">Financial data from 99% of all US insurers</div>
+          </div>
+        </div>
+        <div class="source-option" onclick="toggleSource(this)">
+          <span class="source-option-icon">🚗</span>
+          <div>
+            <div class="source-option-name">NAIC Auto DB</div>
+            <div class="source-option-desc">State-by-state auto premiums & loss data</div>
+          </div>
+        </div>
+        <div class="source-option" onclick="toggleSource(this)">
+          <span class="source-option-icon">📊</span>
+          <div>
+            <div class="source-option-name">InsData</div>
+            <div class="source-option-desc">NAIC analytics via content.naic.org</div>
+          </div>
+        </div>
+        <div class="source-option" onclick="toggleSource(this)">
+          <span class="source-option-icon">⚖️</span>
+          <div>
+            <div class="source-option-name">Legal Filings</div>
+            <div class="source-option-desc">Cross-reference with litigation documents</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROCESSING -->
+    <div class="processing" id="processing">
+      <div class="spinner"></div>
+      <div class="processing-title">Analyzing your document</div>
+      <div class="processing-steps" id="procSteps">
+        <div class="proc-step" id="step1"><span class="proc-dot"></span>Extracting text & OCR</div>
+        <div class="proc-step" id="step2"><span class="proc-dot"></span>Classifying document type</div>
+        <div class="proc-step" id="step3"><span class="proc-dot"></span>Extracting structured fields</div>
+        <div class="proc-step" id="step4"><span class="proc-dot"></span>Cross-referencing NAIC data</div>
+        <div class="proc-step" id="step5"><span class="proc-dot"></span>Detecting gaps & conflicts</div>
+        <div class="proc-step" id="step6"><span class="proc-dot"></span>Generating recovery analysis</div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results" id="results"></div>
+
+  </div>
+</main>
+
+<script>
+const API = 'http://127.0.0.1:8000';
+let selectedFile = null;
+
+// ── FILE HANDLING ──
+function handleFileSelect(file) {
+  if (!file) return;
+  selectedFile = file;
+  const zone = document.getElementById('uploadZone');
+  zone.style.borderColor = 'var(--amber)';
+  zone.style.background = 'var(--amber-bg)';
+  zone.querySelector('.upload-title').textContent = file.name;
+  zone.querySelector('.upload-sub').textContent =
+    `${(file.size / 1024).toFixed(0)} KB — ready to analyze`;
+  document.getElementById('analyzeBtn').disabled = false;
+}
+
+// Drag and drop
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFileSelect(file);
+});
+
+function toggleSource(el) {
+  el.classList.toggle('active');
+}
+
+// ── RUN ANALYSIS ──
+async function runAnalysis() {
+  if (!selectedFile) return;
+
+  document.getElementById('uploadZone').style.display = 'none';
+  document.getElementById('sourceSelector').style.display = 'none';
+  document.getElementById('processing').classList.add('active');
+  document.getElementById('results').classList.remove('active');
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('analyzeBtn').disabled = true;
+
+  const stepIds = ['step1','step2','step3','step4','step5','step6'];
+  let stepIndex = 0;
+  const stepInterval = setInterval(() => {
+    if (stepIndex > 0) {
+      document.getElementById(stepIds[stepIndex-1]).classList.remove('running');
+      document.getElementById(stepIds[stepIndex-1]).classList.add('done');
+    }
+    if (stepIndex < stepIds.length) {
+      document.getElementById(stepIds[stepIndex]).classList.add('running');
+      stepIndex++;
+    } else {
+      clearInterval(stepInterval);
+    }
+  }, 900);
+
+  try {
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    const response = await fetch(`${API}/analyze`, {
+      method: 'POST',
+      body: formData
+    });
+
+    clearInterval(stepInterval);
+    stepIds.forEach(id => {
+      document.getElementById(id).classList.remove('running');
+      document.getElementById(id).classList.add('done');
+    });
+
+    await new Promise(r => setTimeout(r, 500));
+
+    if (!response.ok) throw new Error('Server error: ' + response.status);
+    const data = await response.json();
+
+    document.getElementById('processing').classList.remove('active');
+    renderResults(data);
+
+  } catch (err) {
+    clearInterval(stepInterval);
+    stepIds.forEach(id => {
+      document.getElementById(id).classList.remove('running', 'done');
+    });
+    document.getElementById('processing').classList.remove('active');
+    document.getElementById('uploadZone').style.display = '';
+    document.getElementById('sourceSelector').style.display = '';
+    document.getElementById('analyzeBtn').disabled = false;
+
+    const results = document.getElementById('results');
+    results.classList.add('active');
+    results.innerHTML = '<div class="result-card" style="border-color:#e54d4d"><div class="card-header"><div class="card-title">Analysis Failed</div></div><div class="card-body"><pre style="font-size:0.8rem;color:var(--text-muted);white-space:pre-wrap">' + err.message + '</pre></div></div>';
+
+    console.error('runAnalysis error:', err);
+  }
+}
+
+// ── RENDER RESULTS ──
+function renderResults(data) {
+  const results = document.getElementById('results');
+  results.classList.add('active');
+  results.innerHTML = '';
+
+  const summary = data.policy_summary || data._classification || {};
+  const limits = data.reconciled_limits || {};
+  const exclusions = data.all_exclusions || [];
+  const endorsements = data.all_endorsements || [];
+  const flags = data.attorney_flags || [];
+  const opps = data.recovery_opportunities || [];
+  const gaps = data.coverage_gaps || [];
+
+  // Header
+  const totalRecovery = opps.reduce((sum, o) => {
+    const match = (o.estimated_exposure || '').replace(/[^0-9.]/g,'');
+    return sum + (parseFloat(match) || 0);
+  }, 0);
+
+  results.innerHTML += `
+    <div class="result-header">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span class="source-tag">📄 Uploaded PDF</span>
+          ${summary.policy_type ? `<span class="meta-chip">${summary.policy_type}</span>` : ''}
+          ${summary.form_type ? `<span class="meta-chip">${summary.form_type}</span>` : ''}
+        </div>
+        <div class="result-policy-name">
+          ${summary.named_insured || data._source_file || 'Policy Analysis'}
+        </div>
+        <div class="result-meta">
+          ${summary.insurer ? `<span class="meta-chip">Insurer: ${summary.insurer}</span>` : ''}
+          ${summary.policy_number ? `<span class="meta-chip">Policy: ${summary.policy_number}</span>` : ''}
+          ${summary.policy_period ? `<span class="meta-chip">Period: ${summary.policy_period}</span>` : ''}
+          ${data._page_count ? `<span class="meta-chip">${data._page_count} pages</span>` : ''}
+        </div>
+      </div>
+      ${totalRecovery > 0 ? `
+      <div class="recovery-amount">
+        <div class="recovery-label">Max recovery identified</div>
+        <div class="recovery-value">$${totalRecovery.toLocaleString()}M</div>
+        <div class="recovery-sub">across ${opps.length} opportunit${opps.length===1?'y':'ies'}</div>
+      </div>` : ''}
+    </div>`;
+
+  // Grid
+  const grid = document.createElement('div');
+  grid.className = 'results-grid';
+
+  // Coverage Limits
+  grid.innerHTML += `
+    <div class="result-card">
+      <div class="card-header">
+        <div class="card-title">💰 Coverage Limits</div>
+      </div>
+      <div class="card-body">
+        ${renderLimits(limits)}
+      </div>
+    </div>`;
+
+  // Attorney Flags
+  const urgentFlags = flags.filter(f => f.priority === 'urgent' || f.priority === 'review');
+  grid.innerHTML += `
+    <div class="result-card">
+      <div class="card-header">
+        <div class="card-title">🚩 Attorney Flags</div>
+        <span class="card-count">${flags.length}</span>
+      </div>
+      <div class="card-body">
+        ${flags.length ? flags.map(f => `
+          <div class="flag-item ${f.priority === 'urgent' ? 'high' : f.priority === 'review' ? 'medium' : 'low'}">
+            <span class="flag-severity">${f.priority}</span>
+            <div>
+              <div class="flag-text">${f.issue}</div>
+              ${f.pages?.length ? `<div class="flag-page">Pages: ${f.pages.join(', ')}</div>` : ''}
+            </div>
+          </div>`).join('') :
+          '<div style="color:var(--text-muted);font-size:0.8125rem;text-align:center;padding:1rem">No flags identified</div>'}
+      </div>
+    </div>`;
+
+  results.appendChild(grid);
+
+  // Recovery Opportunities (full width)
+  if (opps.length) {
+    const oppCard = document.createElement('div');
+    oppCard.className = 'result-card';
+    oppCard.innerHTML = `
+      <div class="card-header">
+        <div class="card-title">✦ Recovery Opportunities</div>
+        <span class="card-count">${opps.length}</span>
+      </div>
+      <div class="card-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">
+        ${opps.map(o => `
+          <div class="opp-item">
+            <div class="opp-theory">${o.theory}</div>
+            ${o.estimated_exposure ? `<div class="opp-exposure">${o.estimated_exposure}</div>` : ''}
+            <span class="opp-confidence">${o.confidence} confidence</span>
+          </div>`).join('')}
+      </div>`;
+    results.appendChild(oppCard);
+  }
+
+  // Exclusions + Endorsements grid
+  const grid2 = document.createElement('div');
+  grid2.className = 'results-grid';
+
+  grid2.innerHTML += `
+    <div class="result-card">
+      <div class="card-header">
+        <div class="card-title">⊘ Exclusions</div>
+        <span class="card-count">${exclusions.length}</span>
+      </div>
+      <div class="card-body">
+        ${exclusions.length ? exclusions.slice(0,5).map(e => `
+          <div class="exclusion-item">
+            <div class="exclusion-name">${e.name}</div>
+            ${e.key_language ? `<div class="exclusion-text">"${e.key_language}"</div>` : ''}
+            <div class="exclusion-meta">
+              ${e.endorsement_number ? `<span class="ex-chip">Endorsement ${e.endorsement_number}</span>` : ''}
+              ${e.page ? `<span class="meta-chip">pg. ${e.page}</span>` : ''}
+            </div>
+          </div>`).join('') :
+          '<div style="color:var(--text-muted);font-size:0.8125rem;text-align:center;padding:1rem">No exclusions found</div>'}
+        ${exclusions.length > 5 ? `<div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding-top:4px">+${exclusions.length-5} more exclusions</div>` : ''}
+      </div>
+    </div>`;
+
+  grid2.innerHTML += `
+    <div class="result-card">
+      <div class="card-header">
+        <div class="card-title">◈ Endorsements</div>
+        <span class="card-count">${endorsements.length}</span>
+      </div>
+      <div class="card-body">
+        ${endorsements.length ? endorsements.slice(0,5).map(e => `
+          <div class="endorsement-item">
+            <span class="endorsement-effect ${e.effect || 'clarifying'}">${(e.effect||'').replace('_',' ')}</span>
+            <div>
+              <div class="endorsement-title">${e.title || e.number}</div>
+              <div class="endorsement-summary">${e.summary}</div>
+            </div>
+          </div>`).join('') :
+          '<div style="color:var(--text-muted);font-size:0.8125rem;text-align:center;padding:1rem">No endorsements found</div>'}
+      </div>
+    </div>`;
+
+  results.appendChild(grid2);
+
+  // Coverage gaps
+  if (gaps.length) {
+    const gapCard = document.createElement('div');
+    gapCard.className = 'result-card';
+    gapCard.innerHTML = `
+      <div class="card-header">
+        <div class="card-title">⚠ Coverage Gaps</div>
+        <span class="card-count">${gaps.length}</span>
+      </div>
+      <div class="card-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+        ${gaps.map(g => `
+          <div class="flag-item ${g.severity}">
+            <span class="flag-severity">${g.severity}</span>
+            <div>
+              <div class="flag-text">${g.description}</div>
+              ${g.recovery_implication ? `<div class="flag-page">${g.recovery_implication}</div>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>`;
+    results.appendChild(gapCard);
+  }
+
+  // Export button
+  results.innerHTML += `
+    <div style="display:flex;gap:8px;justify-content:flex-end;padding-bottom:1rem">
+      <button class="btn btn-outline" onclick="exportJSON()">Export JSON</button>
+      <button class="btn btn-primary">Generate Recovery Memo →</button>
+    </div>`;
+
+  window._lastResult = data;
+}
+
+function renderLimits(limits) {
+  const fields = [
+    ['each_occurrence', 'Each Occurrence'],
+    ['general_aggregate', 'General Aggregate'],
+    ['products_completed_ops_aggregate', 'Products / Completed Ops'],
+    ['personal_advertising_injury', 'Personal & Advertising Injury'],
+    ['attachment_point', 'Attachment Point'],
+    ['self_insured_retention', 'Self-Insured Retention'],
+    ['maximum_available', 'Max Available'],
+  ];
+  const rows = fields.map(([key, label]) => {
+    const entry = limits[key];
+    if (!entry && entry !== 0) return '';
+    const val = typeof entry === 'object' ? entry.value : entry;
+    const page = typeof entry === 'object' ? entry.page : null;
+    if (!val && val !== 0) return '';
+    const formatted = typeof val === 'number'
+      ? '$' + (val >= 1000000 ? (val/1000000).toFixed(1)+'M' : val.toLocaleString())
+      : val;
+    return `<div class="limit-row">
+      <span class="limit-name">${label}</span>
+      <span>
+        <span class="limit-value">${formatted}</span>
+        ${page ? `<span class="limit-page">pg.${page}</span>` : ''}
+      </span>
+    </div>`;
+  }).filter(Boolean);
+  return rows.length ? rows.join('') :
+    '<div style="color:var(--text-muted);font-size:0.8125rem;text-align:center;padding:1rem">No limits extracted</div>';
+}
+
+function exportJSON() {
+  if (!window._lastResult) return;
+  const blob = new Blob([JSON.stringify(window._lastResult, null, 2)],
+    {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'coverageiq_analysis.json';
+  a.click();
+}
+
+function resetUI() {
+  selectedFile = null;
+  document.getElementById('uploadZone').style.display = '';
+  document.getElementById('uploadZone').style.borderColor = '';
+  document.getElementById('uploadZone').style.background = '';
+  document.getElementById('uploadZone').querySelector('.upload-title').textContent = 'Drop your policy document here';
+  document.getElementById('uploadZone').querySelector('.upload-sub').textContent = 'Upload a PDF, Word document, or scanned image.\nCoverageIQ will extract all coverage data automatically.';
+  document.getElementById('sourceSelector').style.display = '';
+  document.getElementById('processing').classList.remove('active');
+  document.getElementById('results').classList.remove('active');
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('fileInput').value = '';
+  ['step1','step2','step3','step4','step5','step6'].forEach(id => {
+    document.getElementById(id).classList.remove('done','running');
+  });
+}
+
+// Demo data for UI development (shown when server isn't running)
+function getDemoData(filename) {
+  return {
+    _source_file: filename,
+    _page_count: 247,
+    policy_summary: {
+      policy_type: 'Commercial Umbrella',
+      form_type: 'occurrence',
+      insurer: 'Berkshire Specialty Insurance',
+      named_insured: 'Meridian Holdings LLC',
+      policy_number: 'BKS-2019-UMB-4471',
+      policy_period: '2019-01-01 to 2020-01-01'
+    },
+    reconciled_limits: {
+      each_occurrence: { value: 25000000, page: 4 },
+      general_aggregate: { value: 50000000, page: 4 },
+      attachment_point: { value: 2000000, page: 7 },
+      self_insured_retention: { value: 500000, page: 8 },
+      maximum_available: 50000000
+    },
+    attorney_flags: [
+      { priority: 'urgent', issue: 'Anti-stacking clause in Endorsement 14 may reduce available limits by up to 40% in multi-year claims', pages: [88, 89] },
+      { priority: 'review', issue: 'Follow-form language in Excess Layer B is ambiguous — may not incorporate all primary CGL exclusions', pages: [112] },
+      { priority: 'informational', issue: 'Products/completed ops aggregate runs separately from general aggregate per endorsement 3', pages: [22] }
+    ],
+    recovery_opportunities: [
+      { theory: 'Primary CGL exhaustion — trigger excess layer', estimated_exposure: '$18.7M', confidence: 'high' },
+      { theory: 'Endorsement 14 ambiguity — contest anti-stacking application', estimated_exposure: '$8.2M', confidence: 'medium' },
+      { theory: 'Follow-form gap in Excess B — independent coverage argument', estimated_exposure: '$4.1M', confidence: 'medium' }
+    ],
+    all_exclusions: [
+      { name: 'Pollution Exclusion', key_language: 'arising out of the actual, alleged or threatened discharge, dispersal, seepage, migration, release or escape of pollutants', page: 34, endorsement_number: null },
+      { name: 'Expected or Intended Injury', key_language: 'bodily injury or property damage expected or intended from the standpoint of the insured', page: 31 },
+      { name: 'Professional Services', key_language: 'rendering or failing to render professional services', page: 38, endorsement_number: '7' },
+      { name: 'Aircraft / Auto / Watercraft', key_language: 'bodily injury or property damage arising out of the ownership, maintenance, use or entrustment', page: 35 }
+    ],
+    all_endorsements: [
+      { number: '3', title: 'Separation of Products/Completed Ops Aggregate', effect: 'broadening', summary: 'Products aggregate runs independently and does not erode general aggregate limit.' },
+      { number: '7', title: 'Professional Services Exclusion', effect: 'restricting', summary: 'Adds blanket professional services exclusion not present in base form.' },
+      { number: '14', title: 'Anti-Stacking Provision', effect: 'restricting', summary: 'Limits stacking of per-occurrence limits across multiple policy years for continuous or progressive injury claims.' }
+    ],
+    coverage_gaps: [
+      { description: 'No employment practices liability coverage in umbrella tower', severity: 'high', recovery_implication: 'EPL claims may fall outside covered loss — review primary for silent cyber' },
+      { description: 'Cyber liability sublimit of $1M may be inadequate given business size', severity: 'medium', recovery_implication: 'Recommend excess cyber analysis' }
+    ]
+  };
+}
+</script>
+</body>
+</html>
