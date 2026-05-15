@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Policy Cross-Examination | CoverageIQ</title>
+<title>Policy Cross-Examination | ThemisOS</title>
 <style>
   :root {
     --bg: #0d0f12;
@@ -24,12 +24,11 @@
     --warn-dim: rgba(240,160,48,0.1);
     --info: #60c8f0;
     --info-dim: rgba(96,200,240,0.1);
+    --gold: #C9962B;
     --radius: 10px;
     --radius-sm: 6px;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
     font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     background: var(--bg);
@@ -38,367 +37,340 @@
     font-size: 14px;
   }
 
-  /* ── Header ── */
+  /* ── HEADER ── */
   header {
-    padding: 18px 32px;
+    padding: 0 32px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 0;
     background: var(--surface);
     position: sticky;
     top: 0;
     z-index: 100;
+    height: 56px;
   }
-  .logo-mark {
-    width: 32px; height: 32px;
-    border-radius: var(--radius-sm);
-    background: var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 700; color: #fff;
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-right: 24px;
+    border-right: 1px solid var(--border);
+    margin-right: 20px;
+    height: 100%;
   }
-  header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
-  header span { font-size: 12px; color: var(--text3); margin-left: auto; font-weight: 400; }
+  .header-scales svg {
+    width: 22px; height: 22px;
+  }
+  .header-brand-name {
+    font-family: 'SF Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text);
+  }
+  .header-brand-name span {
+    color: var(--gold);
+  }
+  .header-module {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text3);
+  }
+  .header-module-sep {
+    color: var(--border2);
+    margin: 0 4px;
+  }
+  .header-module-name {
+    color: var(--text2);
+    font-weight: 500;
+  }
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .header-badge {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold);
+    background: rgba(201,150,43,0.08);
+    border: 1px solid rgba(201,150,43,0.2);
+    padding: 3px 10px;
+    border-radius: 2px;
+  }
+  .header-back {
+    font-size: 11px;
+    color: var(--text3);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    transition: color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .header-back:hover { color: var(--text2); }
 
-  /* ── Layout ── */
+  /* ── CONTAINER ── */
   .container { max-width: 1100px; margin: 0 auto; padding: 36px 32px; }
-
-  /* ── Page title ── */
   .page-title { margin-bottom: 32px; }
-  .page-title h2 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 6px; letter-spacing: -0.01em; }
+  .page-title h2 {
+    font-size: 20px; font-weight: 600; color: var(--text);
+    margin-bottom: 6px; letter-spacing: -0.01em;
+  }
   .page-title p { color: var(--text2); font-size: 13px; font-family: -apple-system, sans-serif; }
 
-  /* ── Upload grid ── */
+  /* ── UPLOAD GRID ── */
   .upload-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 24px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 20px; margin-bottom: 24px;
   }
-
   .upload-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0;
-    overflow: hidden;
-    transition: border-color 0.2s;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s;
   }
   .upload-panel:hover { border-color: var(--border2); }
   .upload-panel.loaded { border-color: var(--success); }
   .upload-panel.drag { border-color: var(--accent); background: var(--accent-dim); }
-
   .panel-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--surface2);
+    padding: 11px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; background: var(--surface2);
   }
   .panel-dot { width: 8px; height: 8px; border-radius: 50%; }
   .dot-blue { background: var(--accent); }
   .dot-orange { background: var(--warn); }
-  .panel-header-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); }
+  .panel-header-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text2);
+  }
   .panel-header-label span { color: var(--text3); font-weight: 400; margin-left: 6px; }
-
   .drop-zone {
-    padding: 40px 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: background 0.2s;
+    padding: 40px 20px; text-align: center;
+    cursor: pointer; transition: background 0.2s;
   }
   .drop-zone:hover { background: rgba(255,255,255,0.02); }
-
   .drop-icon {
-    width: 48px; height: 48px;
-    border: 1.5px dashed var(--border2);
-    border-radius: var(--radius);
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 14px;
-    font-size: 22px;
-    transition: border-color 0.2s;
-    color: var(--text3);
+    width: 48px; height: 48px; border: 1.5px dashed var(--border2);
+    border-radius: var(--radius); display: flex; align-items: center;
+    justify-content: center; margin: 0 auto 14px; font-size: 22px;
+    transition: border-color 0.2s; color: var(--text3);
   }
   .upload-panel.drag .drop-icon { border-color: var(--accent); color: var(--accent); }
   .upload-panel.loaded .drop-icon { border-color: var(--success); color: var(--success); border-style: solid; }
-
   .drop-text { font-size: 13px; color: var(--text2); font-family: -apple-system, sans-serif; }
   .drop-text strong { color: var(--text); display: block; margin-bottom: 4px; }
   .drop-subtext { font-size: 11px; color: var(--text3); margin-top: 6px; font-family: -apple-system, sans-serif; }
-
   .file-loaded {
-    padding: 14px 16px;
-    border-top: 1px solid var(--border);
-    display: none;
-    align-items: center;
-    gap: 10px;
-    background: var(--success-dim);
+    padding: 13px 16px; border-top: 1px solid var(--border);
+    display: none; align-items: center; gap: 10px; background: var(--success-dim);
   }
   .upload-panel.loaded .file-loaded { display: flex; }
   .file-loaded-icon { color: var(--success); font-size: 16px; }
   .file-loaded-name { font-size: 12px; color: var(--success); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .file-loaded-size { font-size: 11px; color: var(--text3); }
-
   input[type="file"] { display: none; }
 
-  /* ── Context box ── */
+  /* ── CONTEXT BOX ── */
   .context-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    margin-bottom: 24px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 24px;
   }
   .context-box-header {
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface2);
-    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--text2);
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    background: var(--surface2); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2);
   }
   .context-box textarea {
-    width: 100%; display: block;
-    background: transparent;
-    border: none; outline: none;
-    color: var(--text);
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 13px;
-    padding: 14px 16px;
-    resize: vertical;
-    min-height: 72px;
-    line-height: 1.6;
+    width: 100%; display: block; background: transparent;
+    border: none; outline: none; color: var(--text);
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px;
+    padding: 14px 16px; resize: vertical; min-height: 72px; line-height: 1.6;
   }
   .context-box textarea::placeholder { color: var(--text3); }
 
-  /* ── Analyze button ── */
+  /* ── ANALYZE BTN ── */
   .analyze-btn {
-    width: 100%;
-    padding: 14px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius);
-    font-size: 14px;
-    font-weight: 600;
-    font-family: 'SF Mono', monospace;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
-    letter-spacing: 0.02em;
+    width: 100%; padding: 14px;
+    background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius); font-size: 14px; font-weight: 600;
+    font-family: 'SF Mono', monospace; cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s; letter-spacing: 0.02em;
     margin-bottom: 32px;
   }
   .analyze-btn:hover:not(:disabled) { opacity: 0.88; }
   .analyze-btn:active:not(:disabled) { transform: scale(0.99); }
   .analyze-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-  /* ── Spinner ── */
   .spinner {
-    display: inline-block;
-    width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 0.65s linear infinite;
-    vertical-align: -2px;
-    margin-right: 8px;
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.65s linear infinite;
+    vertical-align: -2px; margin-right: 8px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── Results ── */
-  #results { display: none; }
+  /* ── ERROR BANNER ── */
+  .error-banner {
+    background: var(--danger-dim); border: 1px solid var(--danger);
+    border-radius: var(--radius); padding: 16px 20px;
+    margin-bottom: 24px; display: none;
+  }
+  .error-banner.show { display: block; }
+  .error-banner-title { font-size: 13px; font-weight: 600; color: var(--danger); margin-bottom: 4px; }
+  .error-banner-msg { font-family: -apple-system, sans-serif; font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .error-banner-hint { font-family: -apple-system, sans-serif; font-size: 12px; color: var(--text3); margin-top: 8px; }
 
-  /* ── Verdict banner ── */
+  /* ── RESULTS ── */
+  #results { display: none; }
   .verdict-banner {
-    border-radius: var(--radius);
-    padding: 20px 24px;
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    border: 1px solid;
+    border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 20px; border: 1px solid;
   }
   .verdict-banner.covered    { background: var(--success-dim); border-color: var(--success); }
-  .verdict-banner.not_covered { background: var(--danger-dim);  border-color: var(--danger); }
+  .verdict-banner.not_covered{ background: var(--danger-dim);  border-color: var(--danger); }
   .verdict-banner.partial    { background: var(--warn-dim);    border-color: var(--warn); }
   .verdict-banner.unclear    { background: var(--info-dim);    border-color: var(--info); }
-
   .verdict-icon { font-size: 32px; }
   .verdict-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 4px; }
   .verdict-title { font-size: 20px; font-weight: 700; }
-  .verdict-banner.covered    .verdict-title { color: var(--success); }
+  .verdict-banner.covered     .verdict-title { color: var(--success); }
   .verdict-banner.not_covered .verdict-title { color: var(--danger); }
-  .verdict-banner.partial    .verdict-title { color: var(--warn); }
-  .verdict-banner.unclear    .verdict-title { color: var(--info); }
+  .verdict-banner.partial     .verdict-title { color: var(--warn); }
+  .verdict-banner.unclear     .verdict-title { color: var(--info); }
   .verdict-summary { font-family: -apple-system, sans-serif; font-size: 13px; color: var(--text2); line-height: 1.6; flex: 1; }
-
-  /* ── Metrics row ── */
   .metrics-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
-    margin-bottom: 24px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 24px;
   }
   .metric-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
   }
   .metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 6px; }
   .metric-value { font-size: 22px; font-weight: 700; color: var(--text); }
   .metric-value.sm { font-size: 14px; }
 
-  /* ── Tabs ── */
+  /* ── TABS ── */
   .tabs {
-    display: flex;
-    gap: 2px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 4px;
-    margin-bottom: 20px;
+    display: flex; gap: 2px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 4px; margin-bottom: 20px;
   }
   .tab {
-    flex: 1;
-    padding: 8px 12px;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
-    color: var(--text3);
-    font-family: 'SF Mono', monospace;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-weight: 500;
-    letter-spacing: 0.02em;
+    flex: 1; padding: 8px 12px; background: transparent; border: none;
+    border-radius: var(--radius-sm); color: var(--text3);
+    font-family: 'SF Mono', monospace; font-size: 12px; cursor: pointer;
+    transition: all 0.15s; font-weight: 500; letter-spacing: 0.02em;
   }
   .tab:hover { color: var(--text2); }
   .tab.active { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 
-  /* ── Cards ── */
+  /* ── CARDS ── */
   .result-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    border-left-width: 3px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    margin-bottom: 10px; border-left-width: 3px;
   }
   .result-card.success { border-left-color: var(--success); }
   .result-card.danger  { border-left-color: var(--danger); }
   .result-card.warning { border-left-color: var(--warn); }
   .result-card.info    { border-left-color: var(--accent); }
   .result-card.neutral { border-left-color: var(--border2); }
-
   .card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
   .card-detail { font-family: -apple-system, sans-serif; font-size: 13px; color: var(--text2); line-height: 1.6; }
 
-  /* ── Coverage table ── */
+  /* ── COVERAGE TABLE ── */
   .coverage-table { width: 100%; border-collapse: collapse; }
   .coverage-table th {
-    text-align: left; padding: 10px 14px;
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
-    color: var(--text3); border-bottom: 1px solid var(--border);
-    font-weight: 600;
+    text-align: left; padding: 10px 14px; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3);
+    border-bottom: 1px solid var(--border); font-weight: 600;
   }
   .coverage-table td {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px; color: var(--text2);
-    vertical-align: top;
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    font-size: 13px; color: var(--text2); vertical-align: top;
   }
   .coverage-table td:first-child { color: var(--text); font-weight: 500; }
   .coverage-table tr:last-child td { border-bottom: none; }
   .coverage-table tr:hover td { background: rgba(255,255,255,0.02); }
-
   .badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 99px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
+    display: inline-block; padding: 3px 10px; border-radius: 99px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap;
   }
   .badge-success { background: var(--success-dim); color: var(--success); }
   .badge-danger  { background: var(--danger-dim);  color: var(--danger); }
   .badge-warn    { background: var(--warn-dim);    color: var(--warn); }
   .badge-info    { background: var(--info-dim);    color: var(--info); }
 
-  /* ── Ask a question ── */
-  .ask-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
+  /* ── ASK ── */
+  .ask-row { display: flex; gap: 10px; margin-bottom: 16px; }
   .ask-row input {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: 'SF Mono', monospace;
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.15s;
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text);
+    font-family: 'SF Mono', monospace; font-size: 13px; outline: none; transition: border-color 0.15s;
   }
   .ask-row input:focus { border-color: var(--accent); }
   .ask-row input::placeholder { color: var(--text3); }
   .ask-btn {
-    padding: 10px 18px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-family: 'SF Mono', monospace;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s;
-    white-space: nowrap;
+    padding: 10px 18px; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius-sm); font-family: 'SF Mono', monospace;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; white-space: nowrap;
   }
   .ask-btn:hover { opacity: 0.85; }
-
-  /* ── Recommendation ── */
   .reco-box {
-    background: var(--accent-dim);
-    border: 1px solid rgba(79,124,255,0.3);
-    border-radius: var(--radius);
-    padding: 16px 20px;
-    margin-top: 20px;
+    background: var(--accent-dim); border: 1px solid rgba(79,124,255,0.3);
+    border-radius: var(--radius); padding: 16px 20px; margin-top: 20px;
   }
   .reco-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 6px; }
   .reco-text { font-family: -apple-system, sans-serif; font-size: 14px; color: var(--text); line-height: 1.6; }
-
   .table-wrapper {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
   }
-
   #followup-result .result-card { margin-top: 0; }
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <header>
-  <div class="logo-mark">C</div>
-  <h1>CoverageIQ — Policy Cross-Examination</h1>
-  <span>Powered by Claude</span>
+  <div class="header-brand">
+    <div class="header-scales">
+      <svg viewBox="0 0 64 64" fill="none">
+        <rect x="30" y="8" width="4" height="44" rx="2" fill="var(--gold)"/>
+        <rect x="20" y="50" width="24" height="2.5" rx="1.25" fill="var(--gold)"/>
+        <circle cx="32" cy="8" r="3.5" fill="var(--gold)"/>
+        <rect x="8" y="20" width="48" height="2" rx="1" fill="var(--gold)"/>
+        <line x1="12" y1="22" x2="12" y2="31" stroke="var(--gold)" stroke-width="1.5"/>
+        <line x1="52" y1="22" x2="52" y2="31" stroke="var(--gold)" stroke-width="1.5"/>
+        <path d="M6 31 Q12 36 18 31" stroke="var(--gold)" stroke-width="2" fill="none"/>
+        <path d="M46 31 Q52 36 58 31" stroke="var(--gold)" stroke-width="2" fill="none"/>
+      </svg>
+    </div>
+    <span class="header-brand-name">Themis<span>OS</span></span>
+  </div>
+  <div class="header-module">
+    <span class="header-module-sep">/</span>
+    <span class="header-module-name">Policy Cross-Examination</span>
+  </div>
+  <div class="header-right">
+    <span class="header-badge">Powered by Claude</span>
+    <a href="index.html" class="header-back">← Exit</a>
+  </div>
 </header>
 
+<!-- MAIN -->
 <div class="container">
 
   <div class="page-title">
     <h2>Cross-Examine Documents</h2>
-    <p>Upload an insurance policy and a case file. Claude will analyze coverage, flag conflicts, and identify gaps.</p>
+    <p>Upload an insurance policy and a case file. Themis will analyze coverage, flag conflicts, and identify gaps. Large PDFs are automatically chunked — no page limits.</p>
   </div>
 
-  <!-- Upload panels -->
   <div class="upload-grid">
-    <!-- Policy -->
     <div class="upload-panel" id="policy-panel">
       <div class="panel-header">
         <div class="panel-dot dot-blue"></div>
@@ -411,7 +383,7 @@
           <strong>Drop policy file here</strong>
           Click to browse
         </div>
-        <div class="drop-subtext">PDF · TXT · DOCX supported</div>
+        <div class="drop-subtext">PDF · TXT · DOCX — any size</div>
       </div>
       <div class="file-loaded" id="policy-loaded">
         <span class="file-loaded-icon">✓</span>
@@ -420,7 +392,6 @@
       </div>
     </div>
 
-    <!-- Case file -->
     <div class="upload-panel" id="case-panel">
       <div class="panel-header">
         <div class="panel-dot dot-orange"></div>
@@ -433,7 +404,7 @@
           <strong>Drop case file here</strong>
           Click to browse
         </div>
-        <div class="drop-subtext">PDF · TXT · DOCX supported</div>
+        <div class="drop-subtext">PDF · TXT · DOCX — any size</div>
       </div>
       <div class="file-loaded" id="case-loaded">
         <span class="file-loaded-icon">✓</span>
@@ -443,21 +414,22 @@
     </div>
   </div>
 
-  <!-- Context -->
   <div class="context-box">
     <div class="context-box-header">// Optional context</div>
     <textarea id="extra-context" placeholder="e.g. Focus on liability exclusions. Incident occurred 03/15/2024 involving commercial vehicle on I-90..."></textarea>
   </div>
 
-  <!-- Analyze -->
   <button class="analyze-btn" id="analyze-btn" disabled onclick="runAnalysis()">
     ⚡ Run Cross-Examination
   </button>
 
-  <!-- Results -->
-  <div id="results">
+  <div class="error-banner" id="error-banner">
+    <div class="error-banner-title" id="error-banner-title">Analysis failed</div>
+    <div class="error-banner-msg" id="error-banner-msg"></div>
+    <div class="error-banner-hint" id="error-banner-hint"></div>
+  </div>
 
-    <!-- Verdict banner -->
+  <div id="results">
     <div class="verdict-banner" id="verdict-banner">
       <div>
         <div class="verdict-label">Overall verdict</div>
@@ -466,10 +438,8 @@
       <div class="verdict-summary" id="verdict-summary">—</div>
     </div>
 
-    <!-- Metrics -->
     <div class="metrics-row" id="metrics-row"></div>
 
-    <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" onclick="switchTab('findings')">Key Findings</button>
       <button class="tab" onclick="switchTab('coverage')">Coverage Map</button>
@@ -487,8 +457,8 @@
       </div>
       <div id="followup-result"></div>
     </div>
-
   </div>
+
 </div>
 
 <script>
@@ -502,13 +472,22 @@ function formatBytes(b) {
   return (b/(1024*1024)).toFixed(1) + ' MB';
 }
 
+function showError(title, msg, hint) {
+  const banner = document.getElementById('error-banner');
+  document.getElementById('error-banner-title').textContent = title;
+  document.getElementById('error-banner-msg').textContent = msg;
+  document.getElementById('error-banner-hint').textContent = hint || '';
+  banner.classList.add('show');
+  banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function hideError() { document.getElementById('error-banner').classList.remove('show'); }
+
 function setupUpload(inputId, panelId, iconId, fnameId, fsizeId, onLoad) {
   const input = document.getElementById(inputId);
   const panel = document.getElementById(panelId);
   const icon  = document.getElementById(iconId);
   const fname = document.getElementById(fnameId);
   const fsize = document.getElementById(fsizeId);
-
   function handleFile(file) {
     fname.textContent = file.name;
     fsize.textContent = formatBytes(file.size);
@@ -516,8 +495,8 @@ function setupUpload(inputId, panelId, iconId, fnameId, fsizeId, onLoad) {
     icon.textContent = '✓';
     onLoad(file);
     checkReady();
+    hideError();
   }
-
   input.addEventListener('change', () => { if (input.files[0]) handleFile(input.files[0]); });
   panel.addEventListener('dragover', (e) => { e.preventDefault(); panel.classList.add('drag'); });
   panel.addEventListener('dragleave', () => panel.classList.remove('drag'));
@@ -546,7 +525,9 @@ function switchTab(tab) {
 async function runAnalysis() {
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+  btn.innerHTML = '<span class="spinner"></span> Analyzing… (large docs may take 30-60s)';
+  hideError();
+  document.getElementById('results').style.display = 'none';
 
   const context = document.getElementById('extra-context').value.trim();
   const fd = new FormData();
@@ -557,15 +538,29 @@ async function runAnalysis() {
   try {
     const resp = await fetch('/cross-examine', { method: 'POST', body: fd });
     const data = await resp.json();
-    if (data.error) throw new Error(data.error);
+    if (!resp.ok || data.error) {
+      const msg = data.error || `HTTP ${resp.status}`;
+      const isRateLimit = resp.status === 429 || msg.toLowerCase().includes('rate limit');
+      const isPdfLimit  = msg.toLowerCase().includes('100 pdf pages');
+      if (isRateLimit) {
+        showError('Rate limit hit', msg, 'Wait 60 seconds and try again, or reduce document size.');
+      } else if (isPdfLimit) {
+        showError('PDF too large', 'This PDF exceeds the 100-page API limit.', 'Make sure you\'re running the latest app.py — it extracts text first so this limit never applies.');
+      } else {
+        showError('Analysis error', msg, '');
+      }
+      btn.innerHTML = '⚡ Run Cross-Examination';
+      btn.disabled = false;
+      return;
+    }
     analysisData = data;
     renderResults(data);
     btn.innerHTML = '✓ Analysis complete — re-run?';
     btn.disabled = false;
   } catch (err) {
+    showError('Network error', err.message, 'Check that the Flask server is running on port 5001.');
     btn.innerHTML = '⚡ Run Cross-Examination';
     btn.disabled = false;
-    alert('Analysis error: ' + err.message);
   }
 }
 
@@ -578,7 +573,6 @@ function verdictConfig(v) {
   };
   return m[v] || m['unclear'];
 }
-
 function badgeFor(status) {
   const m = { covered:'badge-success', excluded:'badge-danger', partial:'badge-warn', unclear:'badge-info' };
   const l = { covered:'Covered', excluded:'Excluded', partial:'Partial', unclear:'Unclear' };
@@ -647,12 +641,13 @@ async function askFollowup() {
   try {
     const resp = await fetch('/cross-examine', { method: 'POST', body: fd });
     const data = await resp.json();
-    if (data.error) throw new Error(data.error);
+    if (!resp.ok || data.error) throw new Error(data.error || `HTTP ${resp.status}`);
     const answer = data.summary || JSON.stringify(data);
     resultEl.innerHTML = `<div class="result-card info"><div class="card-title" style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);">Answer</div><div class="card-detail" style="margin-top:6px;">${answer}</div></div>`;
     input.value = '';
   } catch (e) {
-    resultEl.innerHTML = '<div class="result-card danger"><div class="card-detail">Error. Please try again.</div></div>';
+    const isRateLimit = e.message.toLowerCase().includes('rate limit') || e.message.includes('429');
+    resultEl.innerHTML = `<div class="result-card danger"><div class="card-title">${isRateLimit ? 'Rate limited — wait 60s and retry' : 'Error'}</div><div class="card-detail">${e.message}</div></div>`;
   }
 }
 </script>
