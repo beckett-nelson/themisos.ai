@@ -4,7 +4,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 import tempfile, os, anthropic, base64, json, time, random
 from io import BytesIO
-from pipeline import process_policy
 
 app = FastAPI()
 
