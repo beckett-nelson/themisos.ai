@@ -27,6 +27,17 @@
     --gold: #C9962B;
     --radius: 10px;
     --radius-sm: 6px;
+
+    /* Citation chip colors */
+    --cite-policy-bg: rgba(79,124,255,0.1);
+    --cite-policy-border: rgba(79,124,255,0.3);
+    --cite-policy-text: #7fa3ff;
+    --cite-case-bg: rgba(240,160,48,0.1);
+    --cite-case-border: rgba(240,160,48,0.3);
+    --cite-case-text: #f0a030;
+    --cite-both-bg: rgba(96,200,240,0.1);
+    --cite-both-border: rgba(96,200,240,0.3);
+    --cite-both-text: #60c8f0;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -59,9 +70,7 @@
     margin-right: 20px;
     height: 100%;
   }
-  .header-scales svg {
-    width: 22px; height: 22px;
-  }
+  .header-scales svg { width: 22px; height: 22px; }
   .header-brand-name {
     font-family: 'SF Mono', monospace;
     font-size: 13px;
@@ -69,66 +78,30 @@
     letter-spacing: 0.08em;
     color: var(--text);
   }
-  .header-brand-name span {
-    color: var(--gold);
-  }
-  .header-module {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--text3);
-  }
-  .header-module-sep {
-    color: var(--border2);
-    margin: 0 4px;
-  }
-  .header-module-name {
-    color: var(--text2);
-    font-weight: 500;
-  }
-  .header-right {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
+  .header-brand-name span { color: var(--gold); }
+  .header-module { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text3); }
+  .header-module-sep { color: var(--border2); margin: 0 4px; }
+  .header-module-name { color: var(--text2); font-weight: 500; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
   .header-badge {
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--gold);
-    background: rgba(201,150,43,0.08);
-    border: 1px solid rgba(201,150,43,0.2);
-    padding: 3px 10px;
-    border-radius: 2px;
+    font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--gold); background: rgba(201,150,43,0.08);
+    border: 1px solid rgba(201,150,43,0.2); padding: 3px 10px; border-radius: 2px;
   }
   .header-back {
-    font-size: 11px;
-    color: var(--text3);
-    text-decoration: none;
-    letter-spacing: 0.04em;
-    transition: color 0.15s;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    font-size: 11px; color: var(--text3); text-decoration: none;
+    letter-spacing: 0.04em; transition: color 0.15s; display: flex; align-items: center; gap: 5px;
   }
   .header-back:hover { color: var(--text2); }
 
   /* ── CONTAINER ── */
   .container { max-width: 1100px; margin: 0 auto; padding: 36px 32px; }
   .page-title { margin-bottom: 32px; }
-  .page-title h2 {
-    font-size: 20px; font-weight: 600; color: var(--text);
-    margin-bottom: 6px; letter-spacing: -0.01em;
-  }
+  .page-title h2 { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 6px; letter-spacing: -0.01em; }
   .page-title p { color: var(--text2); font-size: 13px; font-family: -apple-system, sans-serif; }
 
   /* ── UPLOAD GRID ── */
-  .upload-grid {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 20px; margin-bottom: 24px;
-  }
+  .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
   .upload-panel {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s;
@@ -148,10 +121,7 @@
     text-transform: uppercase; color: var(--text2);
   }
   .panel-header-label span { color: var(--text3); font-weight: 400; margin-left: 6px; }
-  .drop-zone {
-    padding: 40px 20px; text-align: center;
-    cursor: pointer; transition: background 0.2s;
-  }
+  .drop-zone { padding: 40px 20px; text-align: center; cursor: pointer; transition: background 0.2s; }
   .drop-zone:hover { background: rgba(255,255,255,0.02); }
   .drop-icon {
     width: 48px; height: 48px; border: 1.5px dashed var(--border2);
@@ -268,7 +238,7 @@
   .tab:hover { color: var(--text2); }
   .tab.active { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 
-  /* ── CARDS ── */
+  /* ── RESULT CARDS ── */
   .result-card {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 14px 16px;
@@ -281,6 +251,53 @@
   .result-card.neutral { border-left-color: var(--border2); }
   .card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
   .card-detail { font-family: -apple-system, sans-serif; font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+  /* ── CITATION CHIPS ── */
+  .citation-row {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .cite-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 4px; border: 1px solid;
+    font-size: 10px; font-family: 'SF Mono', monospace;
+    font-weight: 600; letter-spacing: 0.04em; white-space: nowrap;
+    cursor: default;
+  }
+  .cite-chip.doc-policy {
+    background: var(--cite-policy-bg);
+    border-color: var(--cite-policy-border);
+    color: var(--cite-policy-text);
+  }
+  .cite-chip.doc-case_file {
+    background: var(--cite-case-bg);
+    border-color: var(--cite-case-border);
+    color: var(--cite-case-text);
+  }
+  .cite-chip.doc-both {
+    background: var(--cite-both-bg);
+    border-color: var(--cite-both-border);
+    color: var(--cite-both-text);
+  }
+  .cite-chip-doc { opacity: 0.75; text-transform: uppercase; font-size: 9px; letter-spacing: 0.08em; }
+  .cite-chip-sep { opacity: 0.4; }
+  .cite-chip-page { }
+  .cite-chip-clause { opacity: 0.85; }
+
+  /* Conflict dual-citation layout */
+  .conflict-refs {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .conflict-ref-group {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .conflict-ref-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text3); margin-bottom: 2px;
+  }
 
   /* ── COVERAGE TABLE ── */
   .coverage-table { width: 100%; border-collapse: collapse; }
@@ -304,6 +321,24 @@
   .badge-danger  { background: var(--danger-dim);  color: var(--danger); }
   .badge-warn    { background: var(--warn-dim);    color: var(--warn); }
   .badge-info    { background: var(--info-dim);    color: var(--info); }
+
+  /* Inline citation in table */
+  .table-cite {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-top: 5px; padding: 2px 7px; border-radius: 3px; border: 1px solid;
+    font-size: 10px; font-family: 'SF Mono', monospace;
+    font-weight: 500; letter-spacing: 0.03em; white-space: nowrap;
+  }
+  .table-cite.doc-policy {
+    background: var(--cite-policy-bg); border-color: var(--cite-policy-border); color: var(--cite-policy-text);
+  }
+  .table-cite.doc-case_file {
+    background: var(--cite-case-bg); border-color: var(--cite-case-border); color: var(--cite-case-text);
+  }
+  .table-cite.doc-both {
+    background: var(--cite-both-bg); border-color: var(--cite-both-border); color: var(--cite-both-text);
+  }
+  .td-note-wrap { display: flex; flex-direction: column; gap: 0; }
 
   /* ── ASK ── */
   .ask-row { display: flex; gap: 10px; margin-bottom: 16px; }
@@ -331,6 +366,21 @@
     border-radius: var(--radius); overflow: hidden;
   }
   #followup-result .result-card { margin-top: 0; }
+
+  /* ── CITATION LEGEND ── */
+  .cite-legend {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 16px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 20px; font-size: 11px;
+  }
+  .cite-legend-label { color: var(--text3); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin-right: 4px; }
+  .cite-legend-item { display: flex; align-items: center; gap: 5px; }
+  .cite-swatch { width: 10px; height: 10px; border-radius: 2px; border: 1px solid; }
+  .cite-swatch.doc-policy { background: var(--cite-policy-bg); border-color: var(--cite-policy-border); }
+  .cite-swatch.doc-case_file { background: var(--cite-case-bg); border-color: var(--cite-case-border); }
+  .cite-swatch.doc-both { background: var(--cite-both-bg); border-color: var(--cite-both-border); }
+  .cite-legend-text { color: var(--text2); }
 </style>
 </head>
 <body>
@@ -367,7 +417,7 @@
 
   <div class="page-title">
     <h2>Cross-Examine Documents</h2>
-    <p>Upload an insurance policy and a case file. Themis will analyze coverage, flag conflicts, and identify gaps. Large PDFs are automatically chunked — no page limits.</p>
+    <p>Upload an insurance policy and a case file. Themis will analyze coverage, flag conflicts, and identify gaps — with exact page and clause references for every finding.</p>
   </div>
 
   <div class="upload-grid">
@@ -439,6 +489,23 @@
     </div>
 
     <div class="metrics-row" id="metrics-row"></div>
+
+    <!-- Citation legend — shown once results are rendered -->
+    <div class="cite-legend" id="cite-legend" style="display:none;">
+      <span class="cite-legend-label">Citations</span>
+      <div class="cite-legend-item">
+        <div class="cite-swatch doc-policy"></div>
+        <span class="cite-legend-text">Policy (Doc A)</span>
+      </div>
+      <div class="cite-legend-item">
+        <div class="cite-swatch doc-case_file"></div>
+        <span class="cite-legend-text">Case File (Doc B)</span>
+      </div>
+      <div class="cite-legend-item">
+        <div class="cite-swatch doc-both"></div>
+        <span class="cite-legend-text">Both Documents</span>
+      </div>
+    </div>
 
     <div class="tabs">
       <button class="tab active" onclick="switchTab('findings')">Key Findings</button>
@@ -522,12 +589,104 @@ function switchTab(tab) {
   });
 }
 
+// ─── CITATION CHIP BUILDER ───────────────────────────────────────────────────
+
+/**
+ * Build a single citation chip element.
+ * docType: "policy" | "case_file" | "both"
+ * pageRef: "p. 12" | "pp. 4-5" | "n/a"
+ * clause:  "Section 3.2(b)" | "Exclusion F" | etc.
+ */
+function buildCiteChip(docType, pageRef, clause) {
+  if (!docType && !pageRef && !clause) return null;
+  const doc = (docType || 'policy').toLowerCase().replace(/\s+/g, '_');
+  const docLabel = doc === 'policy' ? 'Policy' : doc === 'case_file' ? 'Case File' : 'Both';
+
+  const chip = document.createElement('span');
+  chip.className = `cite-chip doc-${doc}`;
+
+  const parts = [];
+  parts.push(`<span class="cite-chip-doc">${docLabel}</span>`);
+  if (pageRef && pageRef !== 'n/a') {
+    parts.push(`<span class="cite-chip-sep">·</span>`);
+    parts.push(`<span class="cite-chip-page">${escHtml(pageRef)}</span>`);
+  }
+  if (clause) {
+    parts.push(`<span class="cite-chip-sep">·</span>`);
+    parts.push(`<span class="cite-chip-clause">${escHtml(clause)}</span>`);
+  }
+  chip.innerHTML = parts.join('');
+  return chip;
+}
+
+/**
+ * Build a citation row (div.citation-row) with one or more chips.
+ * Used on finding cards.
+ */
+function buildCitationRow(docType, pageRef, clause) {
+  const chip = buildCiteChip(docType, pageRef, clause);
+  if (!chip) return '';
+  const row = document.createElement('div');
+  row.className = 'citation-row';
+  row.appendChild(chip);
+  return row.outerHTML;
+}
+
+/**
+ * Build dual-citation row for conflicts (policy ref + case ref side by side).
+ */
+function buildConflictRefs(policyRef, caseRef) {
+  if (!policyRef && !caseRef) return '';
+  const wrap = document.createElement('div');
+  wrap.className = 'conflict-refs';
+
+  if (policyRef) {
+    const group = document.createElement('div');
+    group.className = 'conflict-ref-group';
+    group.innerHTML = `<div class="conflict-ref-label">Policy ref</div>`;
+    const chip = buildCiteChip('policy', policyRef.page_ref, policyRef.clause);
+    if (chip) group.appendChild(chip);
+    wrap.appendChild(group);
+  }
+  if (caseRef) {
+    const group = document.createElement('div');
+    group.className = 'conflict-ref-group';
+    group.innerHTML = `<div class="conflict-ref-label">Case file ref</div>`;
+    const chip = buildCiteChip('case_file', caseRef.page_ref, caseRef.clause);
+    if (chip) group.appendChild(chip);
+    wrap.appendChild(group);
+  }
+  return wrap.outerHTML;
+}
+
+/**
+ * Build an inline table citation (smaller chip variant).
+ */
+function buildTableCite(docType, pageRef, clause) {
+  if (!docType && !pageRef && !clause) return '';
+  const doc = (docType || 'policy').toLowerCase().replace(/\s+/g, '_');
+  const parts = [];
+  if (pageRef && pageRef !== 'n/a') parts.push(escHtml(pageRef));
+  if (clause) parts.push(escHtml(clause));
+  if (!parts.length) return '';
+  return `<span class="table-cite doc-${doc}">${parts.join(' · ')}</span>`;
+}
+
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ─── RENDER ─────────────────────────────────────────────────────────────────
+
 async function runAnalysis() {
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Analyzing… (large docs may take 30-60s)';
   hideError();
   document.getElementById('results').style.display = 'none';
+  document.getElementById('cite-legend').style.display = 'none';
 
   const context = document.getElementById('extra-context').value.trim();
   const fd = new FormData();
@@ -581,37 +740,65 @@ function badgeFor(status) {
 
 function renderResults(r) {
   document.getElementById('results').style.display = 'block';
+  document.getElementById('cite-legend').style.display = 'flex';
   document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
 
+  // Verdict banner
   const vc = verdictConfig(r.verdict);
   const banner = document.getElementById('verdict-banner');
   banner.className = 'verdict-banner ' + vc.cls;
   document.getElementById('verdict-title').textContent   = vc.icon + ' ' + vc.label;
   document.getElementById('verdict-summary').textContent = r.summary;
 
+  // Metrics
   document.getElementById('metrics-row').innerHTML = `
-    ${r.coverage_limit ? `<div class="metric-card"><div class="metric-label">Coverage limit</div><div class="metric-value sm">${r.coverage_limit}</div></div>` : ''}
-    ${r.deductible     ? `<div class="metric-card"><div class="metric-label">Deductible</div><div class="metric-value sm">${r.deductible}</div></div>` : ''}
+    ${r.coverage_limit ? `<div class="metric-card"><div class="metric-label">Coverage limit</div><div class="metric-value sm">${escHtml(r.coverage_limit)}</div></div>` : ''}
+    ${r.deductible     ? `<div class="metric-card"><div class="metric-label">Deductible</div><div class="metric-value sm">${escHtml(r.deductible)}</div></div>` : ''}
     <div class="metric-card"><div class="metric-label">Key findings</div><div class="metric-value">${(r.key_findings||[]).length}</div></div>
     <div class="metric-card"><div class="metric-label">Coverage items</div><div class="metric-value">${(r.coverage_items||[]).length}</div></div>
     <div class="metric-card"><div class="metric-label">Conflicts</div><div class="metric-value">${(r.conflicts||[]).length}</div></div>`;
 
+  // ── KEY FINDINGS ──
   let findingsHtml = '';
   (r.key_findings||[]).forEach(f => {
-    findingsHtml += `<div class="result-card ${f.type}"><div class="card-title">${f.title}</div><div class="card-detail">${f.detail}</div></div>`;
+    const citation = buildCitationRow(f.document, f.page_ref, f.clause);
+    findingsHtml += `
+      <div class="result-card ${escHtml(f.type)}">
+        <div class="card-title">${escHtml(f.title)}</div>
+        <div class="card-detail">${escHtml(f.detail)}</div>
+        ${citation}
+      </div>`;
   });
   if (r.recommendation) {
-    findingsHtml += `<div class="reco-box"><div class="reco-label">// Recommendation</div><div class="reco-text">${r.recommendation}</div></div>`;
+    findingsHtml += `<div class="reco-box"><div class="reco-label">// Recommendation</div><div class="reco-text">${escHtml(r.recommendation)}</div></div>`;
   }
   document.getElementById('tab-findings').innerHTML = findingsHtml;
 
-  let coverageHtml = '<div class="table-wrapper"><table class="coverage-table"><thead><tr><th>Coverage Area</th><th>Status</th><th>Notes</th></tr></thead><tbody>';
+  // ── COVERAGE MAP ──
+  let coverageHtml = `
+    <div class="table-wrapper">
+      <table class="coverage-table">
+        <thead><tr>
+          <th>Coverage Area</th>
+          <th>Status</th>
+          <th>Notes</th>
+          <th>Reference</th>
+        </tr></thead>
+        <tbody>`;
   (r.coverage_items||[]).forEach(item => {
-    coverageHtml += `<tr><td>${item.item}</td><td>${badgeFor(item.status)}</td><td>${item.note}</td></tr>`;
+    const tableCite = buildTableCite(item.document, item.page_ref, item.clause);
+    coverageHtml += `
+      <tr>
+        <td>${escHtml(item.item)}</td>
+        <td>${badgeFor(item.status)}</td>
+        <td>${escHtml(item.note)}</td>
+        <td>${tableCite}</td>
+      </tr>`;
   });
   coverageHtml += '</tbody></table></div>';
   document.getElementById('tab-coverage').innerHTML = coverageHtml;
 
+  // ── CONFLICTS & GAPS ──
   const typeClass = { gap:'warning', conflict:'danger', exclusion:'danger', ambiguity:'info' };
   let conflictsHtml = '';
   if (!(r.conflicts||[]).length) {
@@ -619,7 +806,16 @@ function renderResults(r) {
   } else {
     (r.conflicts||[]).forEach(c => {
       const cls = typeClass[c.type] || 'info';
-      conflictsHtml += `<div class="result-card ${cls}"><div class="card-title">${c.title} <span style="font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:0.08em;margin-left:8px;opacity:0.6;">${c.type}</span></div><div class="card-detail">${c.detail}</div></div>`;
+      const refs = buildConflictRefs(c.policy_ref, c.case_ref);
+      conflictsHtml += `
+        <div class="result-card ${cls}">
+          <div class="card-title">
+            ${escHtml(c.title)}
+            <span style="font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:0.08em;margin-left:8px;opacity:0.6;">${escHtml(c.type)}</span>
+          </div>
+          <div class="card-detail">${escHtml(c.detail)}</div>
+          ${refs}
+        </div>`;
     });
   }
   document.getElementById('tab-conflicts').innerHTML = conflictsHtml;
@@ -636,18 +832,30 @@ async function askFollowup() {
   const fd = new FormData();
   fd.append('policy',    policyFile);
   fd.append('case_file', caseFile);
-  fd.append('context',   'Answer this specific question: ' + question);
+  fd.append('context',   'Answer this specific question with page and clause references: ' + question);
 
   try {
     const resp = await fetch('/cross-examine', { method: 'POST', body: fd });
     const data = await resp.json();
     if (!resp.ok || data.error) throw new Error(data.error || `HTTP ${resp.status}`);
+
+    // Pull first relevant finding with citation if available
+    const firstFinding = (data.key_findings || [])[0];
     const answer = data.summary || JSON.stringify(data);
-    resultEl.innerHTML = `<div class="result-card info"><div class="card-title" style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);">Answer</div><div class="card-detail" style="margin-top:6px;">${answer}</div></div>`;
+    const citation = firstFinding
+      ? buildCitationRow(firstFinding.document, firstFinding.page_ref, firstFinding.clause)
+      : '';
+
+    resultEl.innerHTML = `
+      <div class="result-card info">
+        <div class="card-title" style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);">Answer</div>
+        <div class="card-detail" style="margin-top:6px;">${escHtml(answer)}</div>
+        ${citation}
+      </div>`;
     input.value = '';
   } catch (e) {
     const isRateLimit = e.message.toLowerCase().includes('rate limit') || e.message.includes('429');
-    resultEl.innerHTML = `<div class="result-card danger"><div class="card-title">${isRateLimit ? 'Rate limited — wait 60s and retry' : 'Error'}</div><div class="card-detail">${e.message}</div></div>`;
+    resultEl.innerHTML = `<div class="result-card danger"><div class="card-title">${isRateLimit ? 'Rate limited — wait 60s and retry' : 'Error'}</div><div class="card-detail">${escHtml(e.message)}</div></div>`;
   }
 }
 </script>
