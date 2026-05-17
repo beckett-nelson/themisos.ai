@@ -21,7 +21,10 @@ try:
 except ImportError:
     HAS_DOCX = False
 
-app = Flask(__name__)
+# Absolute path to the directory containing app.py — works in both local and Railway
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(__name__, static_folder=BASE_DIR)
 CORS(app)
 client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 MODEL = "claude-sonnet-4-5"
@@ -144,11 +147,11 @@ Schema:
 
 @app.route("/")
 def index():
-    return send_from_directory(".", "index.html")
+    return send_from_directory(BASE_DIR, "index.html")
 
 @app.route("/<path:filename>")
 def static_files(filename):
-    return send_from_directory(".", filename)
+    return send_from_directory(BASE_DIR, filename)
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
