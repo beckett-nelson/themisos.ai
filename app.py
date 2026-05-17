@@ -149,6 +149,9 @@ def index():
 
 @app.route("/<path:filename>")
 def static_files(filename):
+    if filename in ("cross-examine", "analyze", "health"):
+        from flask import abort
+        abort(404)
     return send_from_directory(BASE_DIR, filename)
 
 @app.route("/analyze", methods=["POST"])
