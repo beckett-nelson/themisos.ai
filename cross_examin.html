@@ -27,8 +27,6 @@
     --gold: #C9962B;
     --radius: 10px;
     --radius-sm: 6px;
-
-    /* Citation chip colors */
     --cite-policy-bg: rgba(79,124,255,0.1);
     --cite-policy-border: rgba(79,124,255,0.3);
     --cite-policy-text: #7fa3ff;
@@ -42,42 +40,23 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    font-size: 14px;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; font-size: 14px;
   }
 
   /* ── HEADER ── */
   header {
-    padding: 0 32px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 0;
-    background: var(--surface);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    height: 56px;
+    padding: 0 32px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0;
+    background: var(--surface); position: sticky; top: 0; z-index: 100; height: 56px;
   }
   .header-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding-right: 24px;
-    border-right: 1px solid var(--border);
-    margin-right: 20px;
-    height: 100%;
+    display: flex; align-items: center; gap: 10px;
+    padding-right: 24px; border-right: 1px solid var(--border);
+    margin-right: 20px; height: 100%;
   }
   .header-scales svg { width: 22px; height: 22px; }
-  .header-brand-name {
-    font-family: 'SF Mono', monospace;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--text);
-  }
+  .header-brand-name { font-family: 'SF Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--text); }
   .header-brand-name span { color: var(--gold); }
   .header-module { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text3); }
   .header-module-sep { color: var(--border2); margin: 0 4px; }
@@ -102,42 +81,25 @@
 
   /* ── UPLOAD GRID ── */
   .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-  .upload-panel {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s;
-  }
+  .upload-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
   .upload-panel:hover { border-color: var(--border2); }
   .upload-panel.loaded { border-color: var(--success); }
   .upload-panel.drag { border-color: var(--accent); background: var(--accent-dim); }
-  .panel-header {
-    padding: 11px 16px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 8px; background: var(--surface2);
-  }
+  .panel-header { padding: 11px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: var(--surface2); }
   .panel-dot { width: 8px; height: 8px; border-radius: 50%; }
   .dot-blue { background: var(--accent); }
   .dot-orange { background: var(--warn); }
-  .panel-header-label {
-    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--text2);
-  }
+  .panel-header-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); }
   .panel-header-label span { color: var(--text3); font-weight: 400; margin-left: 6px; }
   .drop-zone { padding: 40px 20px; text-align: center; cursor: pointer; transition: background 0.2s; }
   .drop-zone:hover { background: rgba(255,255,255,0.02); }
-  .drop-icon {
-    width: 48px; height: 48px; border: 1.5px dashed var(--border2);
-    border-radius: var(--radius); display: flex; align-items: center;
-    justify-content: center; margin: 0 auto 14px; font-size: 22px;
-    transition: border-color 0.2s; color: var(--text3);
-  }
+  .drop-icon { width: 48px; height: 48px; border: 1.5px dashed var(--border2); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; font-size: 22px; transition: border-color 0.2s; color: var(--text3); }
   .upload-panel.drag .drop-icon { border-color: var(--accent); color: var(--accent); }
   .upload-panel.loaded .drop-icon { border-color: var(--success); color: var(--success); border-style: solid; }
   .drop-text { font-size: 13px; color: var(--text2); font-family: -apple-system, sans-serif; }
   .drop-text strong { color: var(--text); display: block; margin-bottom: 4px; }
   .drop-subtext { font-size: 11px; color: var(--text3); margin-top: 6px; font-family: -apple-system, sans-serif; }
-  .file-loaded {
-    padding: 13px 16px; border-top: 1px solid var(--border);
-    display: none; align-items: center; gap: 10px; background: var(--success-dim);
-  }
+  .file-loaded { padding: 13px 16px; border-top: 1px solid var(--border); display: none; align-items: center; gap: 10px; background: var(--success-dim); }
   .upload-panel.loaded .file-loaded { display: flex; }
   .file-loaded-icon { color: var(--success); font-size: 16px; }
   .file-loaded-name { font-size: 12px; color: var(--success); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -145,35 +107,33 @@
   input[type="file"] { display: none; }
 
   /* ── CONTEXT BOX ── */
-  .context-box {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden; margin-bottom: 24px;
-  }
-  .context-box-header {
-    padding: 10px 16px; border-bottom: 1px solid var(--border);
-    background: var(--surface2); font-size: 11px; font-weight: 600;
-    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2);
-  }
-  .context-box textarea {
-    width: 100%; display: block; background: transparent;
-    border: none; outline: none; color: var(--text);
-    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px;
-    padding: 14px 16px; resize: vertical; min-height: 72px; line-height: 1.6;
-  }
+  .context-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 24px; }
+  .context-box-header { padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); }
+  .context-box textarea { width: 100%; display: block; background: transparent; border: none; outline: none; color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; padding: 14px 16px; resize: vertical; min-height: 72px; line-height: 1.6; }
   .context-box textarea::placeholder { color: var(--text3); }
 
-  /* ── ANALYZE BTN ── */
+  /* ── BUTTONS ── */
   .analyze-btn {
-    width: 100%; padding: 14px;
-    background: var(--accent); color: #fff; border: none;
+    width: 100%; padding: 14px; background: var(--accent); color: #fff; border: none;
     border-radius: var(--radius); font-size: 14px; font-weight: 600;
     font-family: 'SF Mono', monospace; cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s; letter-spacing: 0.02em;
-    margin-bottom: 32px;
+    transition: opacity 0.2s, transform 0.1s; letter-spacing: 0.02em; margin-bottom: 32px;
   }
   .analyze-btn:hover:not(:disabled) { opacity: 0.88; }
   .analyze-btn:active:not(:disabled) { transform: scale(0.99); }
   .analyze-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .download-btn {
+    display: none; align-items: center; gap: 8px;
+    padding: 10px 20px; margin-bottom: 20px;
+    background: var(--success); color: #fff; border: none;
+    border-radius: var(--radius); font-size: 13px; font-weight: 600;
+    font-family: 'SF Mono', monospace; cursor: pointer;
+    transition: opacity 0.15s; letter-spacing: 0.02em;
+  }
+  .download-btn.visible { display: inline-flex; }
+  .download-btn:hover { opacity: 0.85; }
+
   .spinner {
     display: inline-block; width: 14px; height: 14px;
     border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
@@ -183,11 +143,7 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ── ERROR BANNER ── */
-  .error-banner {
-    background: var(--danger-dim); border: 1px solid var(--danger);
-    border-radius: var(--radius); padding: 16px 20px;
-    margin-bottom: 24px; display: none;
-  }
+  .error-banner { background: var(--danger-dim); border: 1px solid var(--danger); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 24px; display: none; }
   .error-banner.show { display: block; }
   .error-banner-title { font-size: 13px; font-weight: 600; color: var(--danger); margin-bottom: 4px; }
   .error-banner-msg { font-family: -apple-system, sans-serif; font-size: 13px; color: var(--text2); line-height: 1.5; }
@@ -195,15 +151,11 @@
 
   /* ── RESULTS ── */
   #results { display: none; }
-  .verdict-banner {
-    border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px;
-    display: flex; align-items: center; gap: 20px; border: 1px solid;
-  }
+  .verdict-banner { border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 20px; border: 1px solid; }
   .verdict-banner.covered    { background: var(--success-dim); border-color: var(--success); }
   .verdict-banner.not_covered{ background: var(--danger-dim);  border-color: var(--danger); }
   .verdict-banner.partial    { background: var(--warn-dim);    border-color: var(--warn); }
   .verdict-banner.unclear    { background: var(--info-dim);    border-color: var(--info); }
-  .verdict-icon { font-size: 32px; }
   .verdict-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 4px; }
   .verdict-title { font-size: 20px; font-weight: 700; }
   .verdict-banner.covered     .verdict-title { color: var(--success); }
@@ -211,39 +163,20 @@
   .verdict-banner.partial     .verdict-title { color: var(--warn); }
   .verdict-banner.unclear     .verdict-title { color: var(--info); }
   .verdict-summary { font-family: -apple-system, sans-serif; font-size: 13px; color: var(--text2); line-height: 1.6; flex: 1; }
-  .metrics-row {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px; margin-bottom: 24px;
-  }
-  .metric-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 14px 16px;
-  }
+  .metrics-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
   .metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 6px; }
   .metric-value { font-size: 22px; font-weight: 700; color: var(--text); }
   .metric-value.sm { font-size: 14px; }
 
   /* ── TABS ── */
-  .tabs {
-    display: flex; gap: 2px; background: var(--surface2);
-    border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 4px; margin-bottom: 20px;
-  }
-  .tab {
-    flex: 1; padding: 8px 12px; background: transparent; border: none;
-    border-radius: var(--radius-sm); color: var(--text3);
-    font-family: 'SF Mono', monospace; font-size: 12px; cursor: pointer;
-    transition: all 0.15s; font-weight: 500; letter-spacing: 0.02em;
-  }
+  .tabs { display: flex; gap: 2px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; margin-bottom: 20px; }
+  .tab { flex: 1; padding: 8px 12px; background: transparent; border: none; border-radius: var(--radius-sm); color: var(--text3); font-family: 'SF Mono', monospace; font-size: 12px; cursor: pointer; transition: all 0.15s; font-weight: 500; letter-spacing: 0.02em; }
   .tab:hover { color: var(--text2); }
   .tab.active { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 
-  /* ── RESULT CARDS ── */
-  .result-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 14px 16px;
-    margin-bottom: 10px; border-left-width: 3px;
-  }
+  /* ── CARDS ── */
+  .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; border-left-width: 3px; }
   .result-card.success { border-left-color: var(--success); }
   .result-card.danger  { border-left-color: var(--danger); }
   .result-card.warning { border-left-color: var(--warn); }
@@ -253,127 +186,49 @@
   .card-detail { font-family: -apple-system, sans-serif; font-size: 13px; color: var(--text2); line-height: 1.6; }
 
   /* ── CITATION CHIPS ── */
-  .citation-row {
-    display: flex; flex-wrap: wrap; gap: 6px;
-    margin-top: 10px; padding-top: 10px;
-    border-top: 1px solid var(--border);
-  }
-  .cite-chip {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 9px; border-radius: 4px; border: 1px solid;
-    font-size: 10px; font-family: 'SF Mono', monospace;
-    font-weight: 600; letter-spacing: 0.04em; white-space: nowrap;
-    cursor: default;
-  }
-  .cite-chip.doc-policy {
-    background: var(--cite-policy-bg);
-    border-color: var(--cite-policy-border);
-    color: var(--cite-policy-text);
-  }
-  .cite-chip.doc-case_file {
-    background: var(--cite-case-bg);
-    border-color: var(--cite-case-border);
-    color: var(--cite-case-text);
-  }
-  .cite-chip.doc-both {
-    background: var(--cite-both-bg);
-    border-color: var(--cite-both-border);
-    color: var(--cite-both-text);
-  }
+  .citation-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .cite-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 4px; border: 1px solid; font-size: 10px; font-family: 'SF Mono', monospace; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap; cursor: default; }
+  .cite-chip.doc-policy { background: var(--cite-policy-bg); border-color: var(--cite-policy-border); color: var(--cite-policy-text); }
+  .cite-chip.doc-case_file { background: var(--cite-case-bg); border-color: var(--cite-case-border); color: var(--cite-case-text); }
+  .cite-chip.doc-both { background: var(--cite-both-bg); border-color: var(--cite-both-border); color: var(--cite-both-text); }
   .cite-chip-doc { opacity: 0.75; text-transform: uppercase; font-size: 9px; letter-spacing: 0.08em; }
   .cite-chip-sep { opacity: 0.4; }
-  .cite-chip-page { }
-  .cite-chip-clause { opacity: 0.85; }
-
-  /* Conflict dual-citation layout */
-  .conflict-refs {
-    display: flex; flex-wrap: wrap; gap: 8px;
-    margin-top: 10px; padding-top: 10px;
-    border-top: 1px solid var(--border);
-  }
-  .conflict-ref-group {
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .conflict-ref-label {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
-    color: var(--text3); margin-bottom: 2px;
-  }
+  .conflict-refs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .conflict-ref-group { display: flex; flex-direction: column; gap: 4px; }
+  .conflict-ref-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 2px; }
 
   /* ── COVERAGE TABLE ── */
   .coverage-table { width: 100%; border-collapse: collapse; }
-  .coverage-table th {
-    text-align: left; padding: 10px 14px; font-size: 10px;
-    text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3);
-    border-bottom: 1px solid var(--border); font-weight: 600;
-  }
-  .coverage-table td {
-    padding: 12px 14px; border-bottom: 1px solid var(--border);
-    font-size: 13px; color: var(--text2); vertical-align: top;
-  }
+  .coverage-table th { text-align: left; padding: 10px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); border-bottom: 1px solid var(--border); font-weight: 600; }
+  .coverage-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text2); vertical-align: top; }
   .coverage-table td:first-child { color: var(--text); font-weight: 500; }
   .coverage-table tr:last-child td { border-bottom: none; }
   .coverage-table tr:hover td { background: rgba(255,255,255,0.02); }
-  .badge {
-    display: inline-block; padding: 3px 10px; border-radius: 99px;
-    font-size: 11px; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap;
-  }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap; }
   .badge-success { background: var(--success-dim); color: var(--success); }
   .badge-danger  { background: var(--danger-dim);  color: var(--danger); }
   .badge-warn    { background: var(--warn-dim);    color: var(--warn); }
   .badge-info    { background: var(--info-dim);    color: var(--info); }
-
-  /* Inline citation in table */
-  .table-cite {
-    display: inline-flex; align-items: center; gap: 4px;
-    margin-top: 5px; padding: 2px 7px; border-radius: 3px; border: 1px solid;
-    font-size: 10px; font-family: 'SF Mono', monospace;
-    font-weight: 500; letter-spacing: 0.03em; white-space: nowrap;
-  }
-  .table-cite.doc-policy {
-    background: var(--cite-policy-bg); border-color: var(--cite-policy-border); color: var(--cite-policy-text);
-  }
-  .table-cite.doc-case_file {
-    background: var(--cite-case-bg); border-color: var(--cite-case-border); color: var(--cite-case-text);
-  }
-  .table-cite.doc-both {
-    background: var(--cite-both-bg); border-color: var(--cite-both-border); color: var(--cite-both-text);
-  }
-  .td-note-wrap { display: flex; flex-direction: column; gap: 0; }
+  .table-cite { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; padding: 2px 7px; border-radius: 3px; border: 1px solid; font-size: 10px; font-family: 'SF Mono', monospace; font-weight: 500; letter-spacing: 0.03em; white-space: nowrap; }
+  .table-cite.doc-policy { background: var(--cite-policy-bg); border-color: var(--cite-policy-border); color: var(--cite-policy-text); }
+  .table-cite.doc-case_file { background: var(--cite-case-bg); border-color: var(--cite-case-border); color: var(--cite-case-text); }
+  .table-cite.doc-both { background: var(--cite-both-bg); border-color: var(--cite-both-border); color: var(--cite-both-text); }
 
   /* ── ASK ── */
   .ask-row { display: flex; gap: 10px; margin-bottom: 16px; }
-  .ask-row input {
-    flex: 1; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text);
-    font-family: 'SF Mono', monospace; font-size: 13px; outline: none; transition: border-color 0.15s;
-  }
+  .ask-row input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text); font-family: 'SF Mono', monospace; font-size: 13px; outline: none; transition: border-color 0.15s; }
   .ask-row input:focus { border-color: var(--accent); }
   .ask-row input::placeholder { color: var(--text3); }
-  .ask-btn {
-    padding: 10px 18px; background: var(--accent); color: #fff; border: none;
-    border-radius: var(--radius-sm); font-family: 'SF Mono', monospace;
-    font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; white-space: nowrap;
-  }
+  .ask-btn { padding: 10px 18px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-family: 'SF Mono', monospace; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
   .ask-btn:hover { opacity: 0.85; }
-  .reco-box {
-    background: var(--accent-dim); border: 1px solid rgba(79,124,255,0.3);
-    border-radius: var(--radius); padding: 16px 20px; margin-top: 20px;
-  }
+  .reco-box { background: var(--accent-dim); border: 1px solid rgba(79,124,255,0.3); border-radius: var(--radius); padding: 16px 20px; margin-top: 20px; }
   .reco-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 6px; }
   .reco-text { font-family: -apple-system, sans-serif; font-size: 14px; color: var(--text); line-height: 1.6; }
-  .table-wrapper {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden;
-  }
+  .table-wrapper { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
   #followup-result .result-card { margin-top: 0; }
 
   /* ── CITATION LEGEND ── */
-  .cite-legend {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    padding: 10px 16px; background: var(--surface2);
-    border: 1px solid var(--border); border-radius: var(--radius);
-    margin-bottom: 20px; font-size: 11px;
-  }
+  .cite-legend { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; font-size: 11px; }
   .cite-legend-label { color: var(--text3); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin-right: 4px; }
   .cite-legend-item { display: flex; align-items: center; gap: 5px; }
   .cite-swatch { width: 10px; height: 10px; border-radius: 2px; border: 1px solid; }
@@ -381,6 +236,30 @@
   .cite-swatch.doc-case_file { background: var(--cite-case-bg); border-color: var(--cite-case-border); }
   .cite-swatch.doc-both { background: var(--cite-both-bg); border-color: var(--cite-both-border); }
   .cite-legend-text { color: var(--text2); }
+
+  /* ── PRINT / PDF ── */
+  @media print {
+    header, .upload-grid, .context-box, .analyze-btn,
+    .error-banner, .tabs, .ask-row, #tab-ask,
+    .download-btn, #followup-result, .page-title { display: none !important; }
+    body { background: #fff !important; color: #000 !important; font-size: 12px; }
+    .container { padding: 0; max-width: 100%; }
+    #results { display: block !important; }
+    .verdict-banner { border: 2px solid #333 !important; background: #f9f9f9 !important; break-inside: avoid; }
+    .verdict-title, .card-title { color: #000 !important; }
+    .verdict-summary, .card-detail { color: #333 !important; }
+    .result-card { border: 1px solid #ccc !important; background: #fff !important; break-inside: avoid; margin-bottom: 8px; }
+    .metric-card { border: 1px solid #ccc !important; background: #fff !important; }
+    .metric-value { color: #000 !important; }
+    .metric-label { color: #555 !important; }
+    .table-wrapper { border: 1px solid #ccc !important; }
+    .coverage-table td, .coverage-table th { color: #333 !important; border-color: #ccc !important; }
+    .reco-box { border: 1px solid #4f7cff !important; background: #f0f4ff !important; }
+    .reco-text { color: #000 !important; }
+    #tab-findings, #tab-coverage, #tab-conflicts { display: block !important; }
+    .cite-legend { border: 1px solid #ccc !important; background: #f9f9f9 !important; }
+    .metrics-row { grid-template-columns: repeat(3, 1fr); }
+  }
 </style>
 </head>
 <body>
@@ -479,7 +358,14 @@
     <div class="error-banner-hint" id="error-banner-hint"></div>
   </div>
 
+  <!-- RESULTS — single clean div, no duplicates -->
   <div id="results">
+
+    <!-- Download button — hidden until analysis completes -->
+    <button class="download-btn" id="download-btn" onclick="downloadPDF()">
+      ⬇ Download as PDF
+    </button>
+
     <div class="verdict-banner" id="verdict-banner">
       <div>
         <div class="verdict-label">Overall verdict</div>
@@ -490,7 +376,6 @@
 
     <div class="metrics-row" id="metrics-row"></div>
 
-    <!-- Citation legend — shown once results are rendered -->
     <div class="cite-legend" id="cite-legend" style="display:none;">
       <span class="cite-legend-label">Citations</span>
       <div class="cite-legend-item">
@@ -524,9 +409,10 @@
       </div>
       <div id="followup-result"></div>
     </div>
-  </div>
 
-</div>
+  </div><!-- end #results -->
+
+</div><!-- end .container -->
 
 <script>
 let policyFile = null;
@@ -589,40 +475,39 @@ function switchTab(tab) {
   });
 }
 
-// ─── CITATION CHIP BUILDER ───────────────────────────────────────────────────
+function downloadPDF() {
+  // Reveal all tabs so nothing is cut off in the PDF
+  ['findings','coverage','conflicts'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = 'block';
+  });
+  window.print();
+  // Restore hidden tabs after print dialog closes
+  setTimeout(() => {
+    ['coverage','conflicts'].forEach(t => {
+      document.getElementById('tab-' + t).style.display = 'none';
+    });
+  }, 1500);
+}
 
-/**
- * Build a single citation chip element.
- * docType: "policy" | "case_file" | "both"
- * pageRef: "p. 12" | "pp. 4-5" | "n/a"
- * clause:  "Section 3.2(b)" | "Exclusion F" | etc.
- */
+// ─── CITATION HELPERS ────────────────────────────────────────────────────────
+
 function buildCiteChip(docType, pageRef, clause) {
   if (!docType && !pageRef && !clause) return null;
   const doc = (docType || 'policy').toLowerCase().replace(/\s+/g, '_');
   const docLabel = doc === 'policy' ? 'Policy' : doc === 'case_file' ? 'Case File' : 'Both';
-
   const chip = document.createElement('span');
   chip.className = `cite-chip doc-${doc}`;
-
-  const parts = [];
-  parts.push(`<span class="cite-chip-doc">${docLabel}</span>`);
+  const parts = [`<span class="cite-chip-doc">${docLabel}</span>`];
   if (pageRef && pageRef !== 'n/a') {
-    parts.push(`<span class="cite-chip-sep">·</span>`);
-    parts.push(`<span class="cite-chip-page">${escHtml(pageRef)}</span>`);
+    parts.push(`<span class="cite-chip-sep">·</span><span class="cite-chip-page">${escHtml(pageRef)}</span>`);
   }
   if (clause) {
-    parts.push(`<span class="cite-chip-sep">·</span>`);
-    parts.push(`<span class="cite-chip-clause">${escHtml(clause)}</span>`);
+    parts.push(`<span class="cite-chip-sep">·</span><span class="cite-chip-clause">${escHtml(clause)}</span>`);
   }
   chip.innerHTML = parts.join('');
   return chip;
 }
 
-/**
- * Build a citation row (div.citation-row) with one or more chips.
- * Used on finding cards.
- */
 function buildCitationRow(docType, pageRef, clause) {
   const chip = buildCiteChip(docType, pageRef, clause);
   if (!chip) return '';
@@ -632,14 +517,10 @@ function buildCitationRow(docType, pageRef, clause) {
   return row.outerHTML;
 }
 
-/**
- * Build dual-citation row for conflicts (policy ref + case ref side by side).
- */
 function buildConflictRefs(policyRef, caseRef) {
   if (!policyRef && !caseRef) return '';
   const wrap = document.createElement('div');
   wrap.className = 'conflict-refs';
-
   if (policyRef) {
     const group = document.createElement('div');
     group.className = 'conflict-ref-group';
@@ -659,9 +540,6 @@ function buildConflictRefs(policyRef, caseRef) {
   return wrap.outerHTML;
 }
 
-/**
- * Build an inline table citation (smaller chip variant).
- */
 function buildTableCite(docType, pageRef, clause) {
   if (!docType && !pageRef && !clause) return '';
   const doc = (docType || 'policy').toLowerCase().replace(/\s+/g, '_');
@@ -678,7 +556,7 @@ function escHtml(str) {
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-// ─── RENDER ─────────────────────────────────────────────────────────────────
+// ─── ANALYSIS ────────────────────────────────────────────────────────────────
 
 async function runAnalysis() {
   const btn = document.getElementById('analyze-btn');
@@ -687,6 +565,7 @@ async function runAnalysis() {
   hideError();
   document.getElementById('results').style.display = 'none';
   document.getElementById('cite-legend').style.display = 'none';
+  document.getElementById('download-btn').classList.remove('visible');
 
   const context = document.getElementById('extra-context').value.trim();
   const fd = new FormData();
@@ -732,6 +611,7 @@ function verdictConfig(v) {
   };
   return m[v] || m['unclear'];
 }
+
 function badgeFor(status) {
   const m = { covered:'badge-success', excluded:'badge-danger', partial:'badge-warn', unclear:'badge-info' };
   const l = { covered:'Covered', excluded:'Excluded', partial:'Partial', unclear:'Unclear' };
@@ -741,16 +621,15 @@ function badgeFor(status) {
 function renderResults(r) {
   document.getElementById('results').style.display = 'block';
   document.getElementById('cite-legend').style.display = 'flex';
+  document.getElementById('download-btn').classList.add('visible');
   document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
 
-  // Verdict banner
   const vc = verdictConfig(r.verdict);
   const banner = document.getElementById('verdict-banner');
   banner.className = 'verdict-banner ' + vc.cls;
   document.getElementById('verdict-title').textContent   = vc.icon + ' ' + vc.label;
   document.getElementById('verdict-summary').textContent = r.summary;
 
-  // Metrics
   document.getElementById('metrics-row').innerHTML = `
     ${r.coverage_limit ? `<div class="metric-card"><div class="metric-label">Coverage limit</div><div class="metric-value sm">${escHtml(r.coverage_limit)}</div></div>` : ''}
     ${r.deductible     ? `<div class="metric-card"><div class="metric-label">Deductible</div><div class="metric-value sm">${escHtml(r.deductible)}</div></div>` : ''}
@@ -758,7 +637,7 @@ function renderResults(r) {
     <div class="metric-card"><div class="metric-label">Coverage items</div><div class="metric-value">${(r.coverage_items||[]).length}</div></div>
     <div class="metric-card"><div class="metric-label">Conflicts</div><div class="metric-value">${(r.conflicts||[]).length}</div></div>`;
 
-  // ── KEY FINDINGS ──
+  // Key Findings
   let findingsHtml = '';
   (r.key_findings||[]).forEach(f => {
     const citation = buildCitationRow(f.document, f.page_ref, f.clause);
@@ -774,31 +653,24 @@ function renderResults(r) {
   }
   document.getElementById('tab-findings').innerHTML = findingsHtml;
 
-  // ── COVERAGE MAP ──
+  // Coverage Map
   let coverageHtml = `
-    <div class="table-wrapper">
-      <table class="coverage-table">
-        <thead><tr>
-          <th>Coverage Area</th>
-          <th>Status</th>
-          <th>Notes</th>
-          <th>Reference</th>
-        </tr></thead>
-        <tbody>`;
+    <div class="table-wrapper"><table class="coverage-table">
+      <thead><tr><th>Coverage Area</th><th>Status</th><th>Notes</th><th>Reference</th></tr></thead>
+      <tbody>`;
   (r.coverage_items||[]).forEach(item => {
     const tableCite = buildTableCite(item.document, item.page_ref, item.clause);
-    coverageHtml += `
-      <tr>
-        <td>${escHtml(item.item)}</td>
-        <td>${badgeFor(item.status)}</td>
-        <td>${escHtml(item.note)}</td>
-        <td>${tableCite}</td>
-      </tr>`;
+    coverageHtml += `<tr>
+      <td>${escHtml(item.item)}</td>
+      <td>${badgeFor(item.status)}</td>
+      <td>${escHtml(item.note)}</td>
+      <td>${tableCite}</td>
+    </tr>`;
   });
   coverageHtml += '</tbody></table></div>';
   document.getElementById('tab-coverage').innerHTML = coverageHtml;
 
-  // ── CONFLICTS & GAPS ──
+  // Conflicts & Gaps
   const typeClass = { gap:'warning', conflict:'danger', exclusion:'danger', ambiguity:'info' };
   let conflictsHtml = '';
   if (!(r.conflicts||[]).length) {
@@ -809,8 +681,7 @@ function renderResults(r) {
       const refs = buildConflictRefs(c.policy_ref, c.case_ref);
       conflictsHtml += `
         <div class="result-card ${cls}">
-          <div class="card-title">
-            ${escHtml(c.title)}
+          <div class="card-title">${escHtml(c.title)}
             <span style="font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:0.08em;margin-left:8px;opacity:0.6;">${escHtml(c.type)}</span>
           </div>
           <div class="card-detail">${escHtml(c.detail)}</div>
@@ -838,14 +709,9 @@ async function askFollowup() {
     const resp = await fetch('/cross-examine', { method: 'POST', body: fd });
     const data = await resp.json();
     if (!resp.ok || data.error) throw new Error(data.error || `HTTP ${resp.status}`);
-
-    // Pull first relevant finding with citation if available
     const firstFinding = (data.key_findings || [])[0];
     const answer = data.summary || JSON.stringify(data);
-    const citation = firstFinding
-      ? buildCitationRow(firstFinding.document, firstFinding.page_ref, firstFinding.clause)
-      : '';
-
+    const citation = firstFinding ? buildCitationRow(firstFinding.document, firstFinding.page_ref, firstFinding.clause) : '';
     resultEl.innerHTML = `
       <div class="result-card info">
         <div class="card-title" style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);">Answer</div>
