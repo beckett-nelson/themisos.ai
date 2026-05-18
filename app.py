@@ -99,7 +99,7 @@ def analyze():
     try:
         text = extract_text(f)
         response = client.messages.create(
-            model=MODEL, max_tokens=4096, system=ANALYZE_SYSTEM,
+            model=MODEL, max_tokens=8192, system=ANALYZE_SYSTEM,
             messages=[{"role": "user", "content": f"Analyze this insurance policy:\n\n{text}"}]
         )
         result = parse_json_response(response.content[0].text)
