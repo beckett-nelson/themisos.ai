@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ThemisOS — AI Platform for Legal Recovery</title>
+<title>ThemisOS — AI Cross-Examination Tool for Insurance Claims</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -101,24 +101,55 @@ nav.scrolled{
   padding:8rem 2.5rem 5rem;
   position:relative;overflow:hidden;
 }
+
+/* Full-bleed Themis photo background */
+.hero-bg-image{
+  position:absolute;inset:0;
+  background-image:url('themisimage1.jpg');
+  background-size:cover;
+  background-position:center 20%;
+  background-repeat:no-repeat;
+  z-index:0;
+}
+/* Multi-layer overlay: dark + gold-tinted vignette for readability */
+.hero-bg-image::after{
+  content:'';
+  position:absolute;inset:0;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(5,9,15,0.55) 0%,
+      rgba(5,9,15,0.45) 35%,
+      rgba(5,9,15,0.65) 70%,
+      rgba(5,9,15,0.92) 100%
+    ),
+    radial-gradient(
+      ellipse 80% 100% at 20% 50%,
+      rgba(5,9,15,0.3) 0%,
+      transparent 60%
+    );
+}
+
+/* subtle grid lines still readable over photo */
 .hero::after{
-  content:'';position:absolute;inset:0;
+  content:'';position:absolute;inset:0;z-index:1;
   background-image:repeating-linear-gradient(
     90deg,
-    rgba(26,46,74,0.25) 0px,
-    rgba(26,46,74,0.25) 1px,
+    rgba(26,46,74,0.12) 0px,
+    rgba(26,46,74,0.12) 1px,
     transparent 1px,
     transparent 120px
   );
   pointer-events:none;
 }
+
 .hero-glow-top{
   position:absolute;top:-200px;left:50%;transform:translateX(-50%);
   width:900px;height:700px;
-  background:radial-gradient(ellipse at center top, rgba(201,150,43,0.09) 0%, transparent 65%);
-  pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at center top, rgba(201,150,43,0.07) 0%, transparent 65%);
+  pointer-events:none;z-index:2;
 }
-.hero-content{position:relative;z-index:1;max-width:900px}
+.hero-content{position:relative;z-index:3;max-width:960px}
 
 .scales-emblem{
   margin:0 auto 3rem;
@@ -127,7 +158,7 @@ nav.scrolled{
 }
 .scales-emblem svg{
   width:72px;height:72px;
-  filter:drop-shadow(0 0 20px rgba(201,150,43,0.4));
+  filter:drop-shadow(0 0 24px rgba(201,150,43,0.5));
 }
 
 .hero-tag{
@@ -149,6 +180,7 @@ nav.scrolled{
   margin-bottom:0.5rem;
   opacity:0;transform:translateY(16px);
   animation:fadeUp .9s .45s forwards;
+  text-shadow:0 4px 32px rgba(0,0,0,0.6);
 }
 .hero-title-os{
   font-family:var(--font-serif);
@@ -159,6 +191,7 @@ nav.scrolled{
   margin-top:0.25rem;
   opacity:0;transform:translateY(16px);
   animation:fadeUp .9s .55s forwards;
+  text-shadow:0 2px 16px rgba(0,0,0,0.5);
 }
 .hero-rule{
   width:80px;height:1px;background:var(--gold-dim);
@@ -167,17 +200,36 @@ nav.scrolled{
 }
 .hero-sub{
   font-family:var(--font-serif);
-  font-size:clamp(1.0625rem,2vw,1.3125rem);
+  font-size:clamp(1.0625rem,2vw,1.375rem);
   font-weight:400;font-style:italic;
-  line-height:1.65;color:var(--parchment-dim);
-  max-width:600px;margin:0 auto 2.5rem;
+  line-height:1.65;color:var(--parchment);
+  max-width:680px;margin:0 auto 1.5rem;
   opacity:0;transform:translateY(12px);
   animation:fadeUp .8s .8s forwards;
+  text-shadow:0 2px 12px rgba(0,0,0,0.5);
+}
+/* Legal credibility line */
+.hero-credential{
+  display:inline-flex;align-items:center;gap:12px;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--parchment-dim);
+  margin-bottom:2.5rem;
+  opacity:0;transform:translateY(10px);
+  animation:fadeUp .8s .9s forwards;
+  border:1px solid var(--ink-border);
+  border-radius:2px;
+  padding:0.5rem 1.25rem;
+  background:rgba(5,9,15,0.5);
+  backdrop-filter:blur(4px);
+}
+.hero-credential-dot{
+  width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;
 }
 .hero-actions{
   display:flex;align-items:center;justify-content:center;gap:1.25rem;flex-wrap:wrap;
   opacity:0;transform:translateY(12px);
-  animation:fadeUp .8s .95s forwards;
+  animation:fadeUp .8s 1.0s forwards;
 }
 .btn-enter{
   display:inline-flex;align-items:center;gap:10px;
@@ -191,12 +243,14 @@ nav.scrolled{
 .btn-enter:hover{
   background:var(--gold-light);
   transform:translateY(-2px);
-  box-shadow:0 10px 30px rgba(201,150,43,0.25);
+  box-shadow:0 10px 30px rgba(201,150,43,0.3);
 }
 .btn-learn{
   display:inline-flex;align-items:center;gap:8px;
   padding:1rem 2rem;
-  background:transparent;color:var(--parchment-dim);
+  background:rgba(5,9,15,0.5);
+  backdrop-filter:blur(8px);
+  color:var(--parchment-dim);
   font-family:var(--font-ui);font-size:0.8125rem;font-weight:500;
   letter-spacing:0.06em;
   border:1px solid var(--ink-border);border-radius:2px;cursor:pointer;
@@ -208,14 +262,16 @@ nav.scrolled{
 .hero-stats{
   display:flex;align-items:center;justify-content:center;gap:0;
   margin-top:5rem;
-  border-top:1px solid var(--ink-border);
-  border-bottom:1px solid var(--ink-border);
-  opacity:0;animation:fadeIn 1s 1.1s forwards;
+  border-top:1px solid rgba(26,46,74,0.7);
+  border-bottom:1px solid rgba(26,46,74,0.7);
+  opacity:0;animation:fadeIn 1s 1.15s forwards;
   flex-wrap:wrap;
+  background:rgba(5,9,15,0.6);
+  backdrop-filter:blur(8px);
 }
 .h-stat{
   padding:1.75rem 3rem;
-  border-right:1px solid var(--ink-border);
+  border-right:1px solid rgba(26,46,74,0.7);
   text-align:center;
 }
 .h-stat:last-child{border-right:none}
@@ -273,6 +329,41 @@ section{position:relative;z-index:1}
   font-family:var(--font-serif);font-style:italic;
   font-size:1.125rem;line-height:1.75;
   color:var(--parchment-dim);max-width:560px;
+}
+
+/* ── CREDIBILITY BAND ── */
+.credibility-band{
+  background:var(--ink-light);
+  border-top:1px solid var(--ink-border);
+  border-bottom:1px solid var(--ink-border);
+  padding:3rem 2.5rem;
+  position:relative;z-index:1;
+}
+.credibility-inner{
+  max-width:1100px;margin:0 auto;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:2px;
+  background:var(--ink-border);
+  border:1px solid var(--ink-border);
+}
+@media(max-width:700px){.credibility-inner{grid-template-columns:1fr}}
+.cred-item{
+  background:var(--ink-light);
+  padding:2rem 2rem;
+  display:flex;align-items:flex-start;gap:1rem;
+}
+.cred-glyph{
+  font-size:1.375rem;flex-shrink:0;margin-top:2px;
+  opacity:0.8;
+}
+.cred-label{
+  font-size:0.6875rem;font-weight:700;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--gold);
+  margin-bottom:0.3rem;
+  font-family:var(--font-mono);
+}
+.cred-text{
+  font-family:var(--font-serif);font-style:italic;
+  font-size:0.9375rem;line-height:1.6;color:var(--parchment-dim);
 }
 
 /* ── CAPABILITIES ── */
@@ -584,7 +675,7 @@ footer{
 }
 .modal-close:hover{color:var(--parchment)}
 
-/* ── INFO MODALS (Privacy, Terms, Security, Platform) ── */
+/* ── INFO MODALS ── */
 .info-modal-box{
   background:var(--ink-mid);
   border:1px solid var(--ink-border);
@@ -694,8 +785,11 @@ footer{
 
 <!-- HERO -->
 <section class="hero">
+  <!-- Themis photo: place themisimage1.jpg in the same folder as this HTML file -->
+  <div class="hero-bg-image"></div>
   <div class="hero-glow-top"></div>
   <div class="hero-content">
+
     <div class="scales-emblem">
       <svg viewBox="0 0 64 64" stroke="var(--gold)" stroke-width="2" fill="none">
         <rect x="30" y="8" width="4" height="46" rx="2" fill="var(--gold)" stroke="none"/>
@@ -709,7 +803,7 @@ footer{
       </svg>
     </div>
 
-    <div class="hero-tag">AI Legal Intelligence</div>
+    <div class="hero-tag">AI Cross-Examination Tool</div>
 
     <h1 class="hero-title">
       Themis
@@ -719,9 +813,18 @@ footer{
     <div class="hero-rule"></div>
 
     <p class="hero-sub">
-      The intelligence layer for insurance recovery, coverage analysis,
-      and legal strategy — built on the foundations of justice.
+      The AI-powered cross-examination and policy analysis platform built for plaintiff attorneys —
+      exposing coverage gaps, carrier conflicts, and recovery leverage across complex insurance claims.
     </p>
+
+    <div class="hero-credential">
+      <span class="hero-credential-dot"></span>
+      Built for tort &amp; insurance recovery litigation
+      <span class="hero-credential-dot"></span>
+      Privilege-safe by design
+      <span class="hero-credential-dot"></span>
+      Attorney-directed, not self-serve
+    </div>
 
     <div class="hero-actions">
       <button class="btn-enter" onclick="openModal()">
@@ -731,7 +834,6 @@ footer{
       <a href="#contact" class="btn-learn">Request Access</a>
     </div>
 
-    <!-- HONEST STATS: speed is real (AI vs manual doc review), mission is factual -->
     <div class="hero-stats">
       <div class="h-stat">
         <div class="h-stat-n">&lt;5 min</div>
@@ -752,8 +854,10 @@ footer{
 <!-- MARQUEE -->
 <div class="marquee-wrap" aria-hidden="true">
   <div class="marquee-track">
+    <span class="marquee-item"><span class="m-dot"></span>Cross-examination prep</span>
     <span class="marquee-item"><span class="m-dot"></span>Policy tower reconstruction</span>
     <span class="marquee-item"><span class="m-dot"></span>Exclusion analysis</span>
+    <span class="marquee-item"><span class="m-dot"></span>Carrier conflict detection</span>
     <span class="marquee-item"><span class="m-dot"></span>Attachment point tracing</span>
     <span class="marquee-item"><span class="m-dot"></span>Coverage gap detection</span>
     <span class="marquee-item"><span class="m-dot"></span>Endorsement parsing</span>
@@ -763,17 +867,44 @@ footer{
     <span class="marquee-item"><span class="m-dot"></span>Follow-form analysis</span>
     <span class="marquee-item"><span class="m-dot"></span>Anti-stacking detection</span>
     <span class="marquee-item"><span class="m-dot"></span>Bad faith documentation</span>
+    <span class="marquee-item"><span class="m-dot"></span>Cross-examination prep</span>
     <span class="marquee-item"><span class="m-dot"></span>Policy tower reconstruction</span>
     <span class="marquee-item"><span class="m-dot"></span>Exclusion analysis</span>
+    <span class="marquee-item"><span class="m-dot"></span>Carrier conflict detection</span>
     <span class="marquee-item"><span class="m-dot"></span>Attachment point tracing</span>
     <span class="marquee-item"><span class="m-dot"></span>Coverage gap detection</span>
     <span class="marquee-item"><span class="m-dot"></span>Endorsement parsing</span>
     <span class="marquee-item"><span class="m-dot"></span>Allocation modeling</span>
     <span class="marquee-item"><span class="m-dot"></span>Litigation cross-reference</span>
     <span class="marquee-item"><span class="m-dot"></span>Recovery memo generation</span>
-    <span class="marquee-item"><span class="m-dot"></span>Follow-form analysis</span>
-    <span class="marquee-item"><span class="m-dot"></span>Anti-stacking detection</span>
     <span class="marquee-item"><span class="m-dot"></span>Bad faith documentation</span>
+  </div>
+</div>
+
+<!-- LEGAL CREDIBILITY BAND -->
+<div class="credibility-band">
+  <div class="credibility-inner reveal">
+    <div class="cred-item">
+      <div class="cred-glyph">⚖</div>
+      <div>
+        <div class="cred-label">Plaintiff-Focused</div>
+        <div class="cred-text">Built specifically for attorneys pursuing tort and insurance recovery claims — not a generic AI tool retrofitted for legal use.</div>
+      </div>
+    </div>
+    <div class="cred-item">
+      <div class="cred-glyph">🔒</div>
+      <div>
+        <div class="cred-label">Privilege-Safe</div>
+        <div class="cred-text">Your documents never train any model. Attorney-client privilege protections are built into every workflow. What you upload stays yours.</div>
+      </div>
+    </div>
+    <div class="cred-item">
+      <div class="cred-glyph">◈</div>
+      <div>
+        <div class="cred-label">Attorney-Directed</div>
+        <div class="cred-text">Every engagement is run with direct founder involvement. Not self-serve SaaS — a boutique service where counsel retains full strategic control.</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -783,33 +914,33 @@ footer{
     <div class="reveal">
       <div class="s-kicker">Platform capabilities</div>
       <h2 class="s-heading">Built for <em>complex claims</em></h2>
-      <p class="s-sub">Every tool in Themis is designed for the nuance of multi-layer insurance recovery and litigation strategy.</p>
+      <p class="s-sub">Every tool in Themis is designed for the nuance of multi-layer insurance recovery, coverage cross-examination, and plaintiff litigation strategy.</p>
     </div>
     <div class="caps-grid">
       <div class="cap-cell reveal">
         <div class="cap-glyph">⊕</div>
         <div class="cap-name">Policy Tower Mapping</div>
-        <div class="cap-desc">Visual reconstruction of every coverage layer, carrier, and attachment point across multi-year programs with full citation trails.</div>
+        <div class="cap-desc">Visual reconstruction of every coverage layer, carrier, and attachment point across multi-year programs with full citation trails — ready for deposition or demand.</div>
       </div>
       <div class="cap-cell reveal">
         <div class="cap-glyph">⚖</div>
-        <div class="cap-name">Litigation Cross-Reference</div>
-        <div class="cap-desc">Imports complaints, orders, and settlements to align coverage analysis with live litigation posture and demand strategy.</div>
+        <div class="cap-name">Cross-Examination Preparation</div>
+        <div class="cap-desc">Generates line-by-line question sequences grounded in policy language and carrier representations — exposing contradictions and bad faith positions before you walk in.</div>
       </div>
       <div class="cap-cell reveal">
         <div class="cap-glyph">∿</div>
         <div class="cap-name">Allocation Modeling</div>
-        <div class="cap-desc">Pro-rata, all-sums, and hybrid models applied automatically based on policy language and jurisdiction-specific case law.</div>
+        <div class="cap-desc">Pro-rata, all-sums, and hybrid models applied automatically based on policy language and jurisdiction-specific case law favorable to plaintiff recovery.</div>
       </div>
       <div class="cap-cell reveal">
         <div class="cap-glyph">◈</div>
         <div class="cap-name">AI Coverage Counsel</div>
-        <div class="cap-desc">Ask in plain English — and get cited, jurisdictionally-aware answers grounded in your specific policy documents.</div>
+        <div class="cap-desc">Ask in plain English — get cited, jurisdictionally-aware answers grounded in your specific policy documents and the plaintiff-side case law that supports recovery.</div>
       </div>
       <div class="cap-cell reveal">
         <div class="cap-glyph">⊞</div>
-        <div class="cap-name">Team Workspaces</div>
-        <div class="cap-desc">Shared matters for coverage counsel, litigation associates, and client teams. Role-based access and full audit trails.</div>
+        <div class="cap-name">Bad Faith Documentation</div>
+        <div class="cap-desc">Identifies carrier conduct patterns, denial language, and claims handling timelines that support extracontractual and bad faith theories of recovery.</div>
       </div>
       <div class="cap-cell reveal">
         <div class="cap-glyph">⬡</div>
@@ -826,7 +957,7 @@ footer{
     <div class="reveal">
       <div class="s-kicker">How it works</div>
       <h2 class="s-heading">From raw documents to <em>recovery strategy</em></h2>
-      <p class="s-sub">Themis processes your full document stack and builds a unified understanding of every coverage layer in a single pipeline.</p>
+      <p class="s-sub">Themis processes your full document stack and builds a unified understanding of every coverage layer — giving plaintiff counsel the analytical leverage carriers spend years building against you.</p>
     </div>
     <div class="pipeline-layout reveal">
       <div class="pipeline-steps">
@@ -861,8 +992,8 @@ footer{
         <div class="pip-step">
           <span class="pip-n">05</span>
           <div>
-            <div class="pip-name">Recovery memo generation</div>
-            <div class="pip-desc">Outputs a cite-ready brief with theory of recovery, applicable limits, and recommended demand — ready for counsel to file or negotiate.</div>
+            <div class="pip-name">Recovery memo &amp; cross-exam output</div>
+            <div class="pip-desc">Outputs a cite-ready brief with theory of recovery, applicable limits, and cross-examination question lines — ready for counsel to file, negotiate, or take to deposition.</div>
           </div>
         </div>
       </div>
@@ -891,6 +1022,9 @@ footer{
           <div class="tl"><span class="tw">&nbsp;&nbsp;⚠ Gap in Endorsement 14 — flagged</span></div>
           <div class="tl"><span class="tw">&nbsp;&nbsp;⚠ Anti-stacking clause · pg. 88</span></div>
           <div class="tl">&nbsp;</div>
+          <div class="tl"><span class="tp">▶</span><span class="tk">Generating cross-exam question lines...</span></div>
+          <div class="tl"><span class="tc">&nbsp;&nbsp;18 carrier contradiction vectors identified</span></div>
+          <div class="tl">&nbsp;</div>
           <div class="tl"><span class="tp">▶</span><span class="ts">Recovery: $18.7M across 4 policy towers</span></div>
           <div class="tl"><span class="tc">&nbsp;&nbsp;Memo generated · 48 citations<span class="tcursor"></span></span></div>
         </div>
@@ -908,27 +1042,28 @@ footer{
     </div>
     <div class="contact-layout reveal">
       <div class="contact-pitch">
-        <h3>This is a boutique service.<br>You deal with the founder.</h3>
+        <h3>This is a boutique service.<br>You deal with the team directly.</h3>
         <p>
-          ThemisOS is not a self-serve SaaS product. Every engagement starts with a direct conversation — we want to understand your case portfolio, your team's workflow, and where the biggest recovery opportunities sit before we touch a single document.
+          ThemisOS is not a self-serve SaaS product. Every engagement starts with a direct conversation — we want to understand your case portfolio, your litigation posture, and where the biggest recovery opportunities sit before we touch a single document.
         </p>
         <ul>
           <li>No sales team. No runaround. One conversation.</li>
           <li>Custom onboarding for your document stack</li>
-          <li>Bespoke analysis on your first matter, together</li>
+          <li>Bespoke cross-examination analysis on your first matter, together</li>
           <li>Honest assessment of what the platform can and can't do for you</li>
+          <li>Plaintiff counsel rates and engagement structures</li>
         </ul>
         <p>
-          If you're managing complex, multi-layer insurance claims and want to know whether AI can move the needle on your recovery — reach out. That conversation is free.
+          If you're managing complex tort or multi-layer insurance claims and want to know whether AI can move the needle on your recovery — reach out. That conversation is free.
         </p>
       </div>
 
       <div class="contact-card">
         <div class="contact-card-header">
-          <div class="contact-avatar">B</div>
+          <div class="contact-avatar">T</div>
           <div>
-            <div class="contact-name">Beckett</div>
-            <div class="contact-role">Founder — ThemisOS</div>
+            <div class="contact-name">ThemisOS</div>
+            <div class="contact-role">AI Legal Intelligence Platform</div>
           </div>
         </div>
         <div class="contact-card-body">
@@ -981,7 +1116,7 @@ footer{
     <div class="cta-divider"></div>
     <p class="cta-sub">The platform is active. Reach out and let's examine what your documents are worth.</p>
     <a class="btn-enter" href="mailto:beckett@themisos.ai?subject=ThemisOS%20%E2%80%94%20Access%20Request&body=Hi%20Beckett%2C%0A%0AI%27m%20interested%20in%20learning%20more%20about%20ThemisOS.%0A%0AHere%27s%20a%20brief%20overview%20of%20my%20situation%3A%0A%0A">
-      Contact Beckett
+      Contact ThemisOS
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
   </div>
@@ -1065,9 +1200,7 @@ footer{
 
 <script>
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔑  SET YOUR PASSCODE HERE ↓
-//     Replace 'themis2025' with whatever you want.
-//     This is the only line you need to change.
+// 🔑  PASSCODE — change 'beta2' to whatever you want
 const PASSCODE = 'beta2';
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1137,21 +1270,23 @@ const INFO_CONTENT = {
     kicker: 'ThemisOS — Overview',
     title: 'The Platform',
     body: `
-      <p>ThemisOS is an AI-powered analysis platform built specifically for the complexity of insurance recovery and coverage litigation. It is not a general-purpose tool — every feature exists to serve one purpose: finding and substantiating the maximum recoverable amount from a complex document stack.</p>
+      <p>ThemisOS is an AI-powered cross-examination and policy analysis platform built specifically for plaintiff attorneys in tort and insurance recovery litigation. It is not a general-purpose tool — every feature exists to serve one purpose: finding and substantiating the maximum recoverable amount from a complex document stack.</p>
       <div class="highlight">ThemisOS is currently offered as a managed, boutique service. The platform is used directly by our team on your behalf, or with guided access for vetted clients.</div>
       <h3>What it does</h3>
       <ul>
         <li>Reconstructs policy towers across primary, excess, umbrella, and specialty layers</li>
+        <li>Generates cross-examination question sequences grounded in carrier representations and policy language</li>
         <li>Identifies coverage gaps, anti-stacking clauses, and exclusion conflicts</li>
         <li>Cross-references live litigation records against policy language</li>
         <li>Generates cite-ready recovery memos ready for counsel review</li>
         <li>Supports pro-rata, all-sums, and hybrid allocation models</li>
+        <li>Documents bad faith carrier conduct for extracontractual claims</li>
       </ul>
       <h3>Who it's for</h3>
       <ul>
+        <li>Plaintiff attorneys in tort and insurance recovery matters</li>
         <li>Coverage counsel managing multi-carrier, multi-year programs</li>
-        <li>Corporate risk managers with complex pending claims</li>
-        <li>Law firms building insurance recovery strategy</li>
+        <li>Law firms building insurance recovery strategy against carrier defenses</li>
       </ul>
       <h3>How to get access</h3>
       <p>Access is by invitation. Reach out directly to begin a conversation: <a class="info-contact-link" href="mailto:beckett@themisos.ai">beckett@themisos.ai</a></p>
@@ -1176,7 +1311,7 @@ const INFO_CONTENT = {
         <li>We do not track your usage behavior for advertising or analytics purposes</li>
       </ul>
       <h3>This website</h3>
-      <p>This website does not use cookies, tracking pixels, analytics scripts, or any third-party tracking technology. No visitor data is collected, stored, or shared. When you visit themisos.ai, no record of your visit is created or retained.</p>
+      <p>This website does not use cookies, tracking pixels, analytics scripts, or any third-party tracking technology. No visitor data is collected, stored, or shared.</p>
       <h3>Questions</h3>
       <p>For any security-related questions or to discuss enterprise data agreements, contact: <a class="info-contact-link" href="mailto:beckett@themisos.ai">beckett@themisos.ai</a></p>
     `
@@ -1188,7 +1323,7 @@ const INFO_CONTENT = {
       <p>ThemisOS takes privacy seriously. This policy describes what information we collect, what we do with it, and — critically — what we do not do.</p>
       <div class="highlight">Short version: we do not track you, we do not sell your data, and we do not use your documents for anything other than the work you engage us to do.</div>
       <h3>Website visitors</h3>
-      <p>This website collects no personal information from visitors. There are no analytics tools, no cookies, no tracking scripts, and no third-party integrations that observe your behavior. If you visit this site and leave without contacting us, no record of your visit exists anywhere in our systems.</p>
+      <p>This website collects no personal information from visitors. There are no analytics tools, no cookies, no tracking scripts, and no third-party integrations that observe your behavior.</p>
       <h3>When you contact us</h3>
       <p>If you email us, we receive your email address and the content of your message. We use that information solely to respond to you. We do not add you to any mailing list, share your contact information, or retain it beyond the scope of our engagement.</p>
       <h3>Client document data</h3>
@@ -1198,8 +1333,6 @@ const INFO_CONTENT = {
         <li>Your materials are never used to improve, train, or fine-tune any AI model</li>
         <li>We do not share client materials with any third party without explicit written consent</li>
       </ul>
-      <h3>Changes to this policy</h3>
-      <p>If this policy changes materially, we will update this page. We will not notify you via email unless you are an active client.</p>
       <h3>Contact</h3>
       <p>Privacy questions: <a class="info-contact-link" href="mailto:beckett@themisos.ai">beckett@themisos.ai</a></p>
     `
@@ -1208,9 +1341,9 @@ const INFO_CONTENT = {
     kicker: 'ThemisOS — Legal',
     title: 'Terms of Use',
     body: `
-      <p>By accessing or using ThemisOS — including this website and any platform access granted to you — you agree to the following terms. Please read them carefully.</p>
+      <p>By accessing or using ThemisOS — including this website and any platform access granted to you — you agree to the following terms.</p>
       <h3>Nature of the service</h3>
-      <p>ThemisOS provides AI-assisted document analysis tools to support legal and insurance professionals. The output of this platform — including recovery memos, coverage analyses, and any other generated materials — is not legal advice. It is analytical output intended to assist qualified professionals, not to replace their judgment.</p>
+      <p>ThemisOS provides AI-assisted document analysis tools to support legal professionals. The output of this platform is not legal advice. It is analytical output intended to assist qualified attorneys, not to replace their judgment.</p>
       <div class="highlight">ThemisOS is a tool, not a lawyer. Nothing produced by this platform constitutes legal advice or establishes an attorney-client relationship.</div>
       <h3>Permitted use</h3>
       <ul>
@@ -1222,7 +1355,7 @@ const INFO_CONTENT = {
       <h3>Intellectual property</h3>
       <p>The ThemisOS platform, its design, and its underlying methodology are proprietary. Output generated from your documents belongs to you. The platform itself does not.</p>
       <h3>Limitation of liability</h3>
-      <p>ThemisOS is provided as-is. We make no warranties — express or implied — about the accuracy or completeness of any analysis. In no event shall ThemisOS be liable for decisions made in reliance on platform output. Users are responsible for independent verification of all results before any legal or financial action.</p>
+      <p>ThemisOS is provided as-is. We make no warranties about the accuracy or completeness of any analysis. Users are responsible for independent verification of all results before any legal or financial action.</p>
       <h3>Governing law</h3>
       <p>These terms are governed by the laws of the State of Montana, without regard to conflict of law principles.</p>
       <h3>Contact</h3>
