@@ -238,12 +238,19 @@
   .cite-swatch.doc-both { background: var(--cite-both-bg); border-color: var(--cite-both-border); }
   .cite-legend-text { color: var(--text2); }
 
-  /* ── PRINT / PDF ── */
+  /* ── PRINT / PDF — watermark removed via @page ── */
+  @page {
+    margin: 1cm;
+    /* Removes browser-injected URL/date headers and footers */
+    size: A4;
+  }
+
   @media print {
     header, .upload-grid, .context-box, .analyze-btn,
     .error-banner, .tabs, .ask-row, #tab-ask,
     .download-btn, #followup-result, .page-title { display: none !important; }
     body { background: #fff !important; color: #000 !important; font-size: 12px; }
+    body::before { content: 'ThemisOS — Policy Cross-Examination Report'; display: block; font-size: 11px; color: #888; margin-bottom: 16px; font-family: -apple-system, sans-serif; }
     .container { padding: 0; max-width: 100%; }
     #results { display: block !important; }
     .verdict-banner { border: 2px solid #333 !important; background: #f9f9f9 !important; break-inside: avoid; }
@@ -264,6 +271,26 @@
 </style>
 </head>
 <body>
+
+<!-- ACCESS GUARD: redirects to index if not navigated from within the app -->
+<script>
+  (function() {
+    const ref = document.referrer;
+    const allowed = [
+      window.location.origin,
+      'app.themisos.ai',
+      'localhost',
+      '127.0.0.1'
+    ];
+    const cameFromApp = ref && allowed.some(function(a) { return ref.includes(a); });
+    const hasSession = sessionStorage.getItem('themis_auth');
+    if (!cameFromApp && !hasSession) {
+      window.location.replace('index.html');
+    }
+    // Set session so page refreshes still work
+    sessionStorage.setItem('themis_auth', '1');
+  })();
+</script>
 
 <!-- HEADER -->
 <header>
@@ -359,10 +386,8 @@
     <div class="error-banner-hint" id="error-banner-hint"></div>
   </div>
 
-  <!-- RESULTS — single clean div, no duplicates -->
   <div id="results">
 
-    <!-- Download button — hidden until analysis completes -->
     <button class="download-btn" id="download-btn" onclick="downloadPDF()">
       ⬇ Download as PDF
     </button>
@@ -411,9 +436,9 @@
       <div id="followup-result"></div>
     </div>
 
-  </div><!-- end #results -->
+  </div>
 
-</div><!-- end .container -->
+</div>
 
 <script>
 let policyFile = null;
@@ -477,12 +502,10 @@ function switchTab(tab) {
 }
 
 function downloadPDF() {
-  // Reveal all tabs so nothing is cut off in the PDF
   ['findings','coverage','conflicts'].forEach(t => {
     document.getElementById('tab-' + t).style.display = 'block';
   });
   window.print();
-  // Restore hidden tabs after print dialog closes
   setTimeout(() => {
     ['coverage','conflicts'].forEach(t => {
       document.getElementById('tab-' + t).style.display = 'none';
