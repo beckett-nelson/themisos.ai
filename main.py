@@ -160,8 +160,8 @@ Return ONLY this JSON schema — no markdown, no commentary:
   ],
   "recovery_opportunities": [
     {{
-      "theory": "legal theory or coverage argument",
-      "estimated_exposure": "$0M",
+      "theory": "legal theory or coverage argument — always populate this if any dollar amount appears in the case file",
+      "estimated_exposure": "exact dollar amount as integer string e.g. 250000 — required, never null, never 0 unless truly zero",
       "confidence": "high | medium | low"
     }}
   ],
