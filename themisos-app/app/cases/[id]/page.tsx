@@ -67,7 +67,17 @@ export default function CasePage() {
       const data = await resp.json()
       if (!resp.ok || data.error) { setError(data.error || "Analysis failed"); setAnalyzing(false); return }
       setResults(data)
-      await supabase.from("cases").update({ documents_analyzed: (caseData?.documents_analyzed || 0) + 2 }).eq("id", params.id)
+      // Parse total recovery from opportunities
+      const recoveryTotal = (data.recovery_opportunities || []).reduce((sum: number, r: any) => {
+        const raw = r.estimated_exposure || ""
+        const parsed = parseInt(raw.replace(/[^0-9]/g, ""), 10)
+        return sum + (isNaN(parsed) ? 0 : parsed)
+      }, 0)
+      await supabase.from("cases").update({
+        documents_analyzed: (caseData?.documents_analyzed || 0) + 2,
+        recovery_identified: recoveryTotal
+      }).eq("id", params.id)
+      setCaseData(prev => prev ? { ...prev, documents_analyzed: (prev.documents_analyzed || 0) + 2, recovery_identified: recoveryTotal } : prev)
     } catch (e: any) {
       setError("Backend unreachable: " + e.message)
     }
