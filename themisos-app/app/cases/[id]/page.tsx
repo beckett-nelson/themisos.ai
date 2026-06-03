@@ -68,10 +68,18 @@ export default function CasePage() {
       if (!resp.ok || data.error) { setError(data.error || "Analysis failed"); setAnalyzing(false); return }
       setResults(data)
       // Parse total recovery from opportunities
+      const parseExposure = (raw: string): number => {
+        if (!raw) return 0
+        const s = raw.toUpperCase().replace(/,/g, "")
+        const num = parseFloat(s.replace(/[^0-9.]/g, ""))
+        if (isNaN(num)) return 0
+        if (s.includes("B")) return Math.round(num * 1_000_000_000)
+        if (s.includes("M")) return Math.round(num * 1_000_000)
+        if (s.includes("K")) return Math.round(num * 1_000)
+        return Math.round(num)
+      }
       const recoveryTotal = (data.recovery_opportunities || []).reduce((sum: number, r: any) => {
-        const raw = r.estimated_exposure || ""
-        const parsed = parseInt(raw.replace(/[^0-9]/g, ""), 10)
-        return sum + (isNaN(parsed) ? 0 : parsed)
+        return sum + parseExposure(r.estimated_exposure || "")
       }, 0)
       await supabase.from("cases").update({
         documents_analyzed: (caseData?.documents_analyzed || 0) + 2,
