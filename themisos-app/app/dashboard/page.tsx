@@ -18,6 +18,7 @@ export default function DashboardPage() {
   const [cases, setCases] = useState<Case[]>([])
   const [loading, setLoading] = useState(true)
   const [userName, setUserName] = useState('there')
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -32,9 +33,7 @@ export default function DashboardPage() {
         .eq('id', user.id)
         .single()
 
-      if (profile?.full_name) {
-        setUserName(profile.full_name.split(' ')[0])
-      }
+      if (profile?.full_name) setUserName(profile.full_name.split(' ')[0])
 
       const { data: casesData } = await supabase
         .from('cases')
@@ -44,7 +43,6 @@ export default function DashboardPage() {
       setCases(casesData || [])
       setLoading(false)
     }
-
     loadData()
   }, [])
 
@@ -55,6 +53,18 @@ export default function DashboardPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     router.push('/login')
+  }
+
+  const toggleStatus = async (c: Case) => {
+    const newStatus = c.status === 'active' ? 'inactive' : 'active'
+    await supabase.from('cases').update({ status: newStatus }).eq('id', c.id)
+    setCases(prev => prev.map(x => x.id === c.id ? { ...x, status: newStatus } : x))
+  }
+
+  const handleDelete = async (id: string) => {
+    await supabase.from('cases').delete().eq('id', id)
+    setCases(prev => prev.filter(x => x.id !== id))
+    setConfirmDelete(null)
   }
 
   return (
@@ -77,10 +87,7 @@ export default function DashboardPage() {
             <h2 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '4px' }}>Welcome, {userName}</h2>
             <p style={{ color: '#9ca3af' }}>Your recovery cases and analysis tools are below.</p>
           </div>
-          <button
-            onClick={() => router.push('/cases/new')}
-            style={{ backgroundColor: '#c9a84c', color: '#0a0f1e', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, border: 'none', cursor: 'pointer' }}
-          >
+          <button onClick={() => router.push('/cases/new')} style={{ backgroundColor: '#c9a84c', color: '#0a0f1e', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, border: 'none', cursor: 'pointer' }}>
             + New Case
           </button>
         </div>
@@ -112,7 +119,7 @@ export default function DashboardPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #1e2d4a' }}>
-                  {['Case Name', 'Claimant', 'Status', 'Docs', 'Recovery'].map(h => (
+                  {['Case Name', 'Claimant', 'Status', 'Docs', 'Recovery', ''].map(h => (
                     <th key={h} style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', color: '#6b7280', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                   ))}
                 </tr>
@@ -121,20 +128,63 @@ export default function DashboardPage() {
                 {cases.map((c) => (
                   <tr
                     key={c.id}
-                    onClick={() => router.push(`/cases/${c.id}`)}
-                    style={{ borderBottom: '1px solid #1e2d4a', cursor: 'pointer' }}
+                    style={{ borderBottom: '1px solid #1e2d4a' }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#0a0f1e')}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#ffffff', fontWeight: 500 }}>{c.name}</td>
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#9ca3af' }}>{c.claimant || '—'}</td>
+                    <td onClick={() => router.push(`/cases/${c.id}`)} style={{ padding: '16px 24px', fontSize: '14px', color: '#ffffff', fontWeight: 500, cursor: 'pointer' }}>{c.name}</td>
+                    <td onClick={() => router.push(`/cases/${c.id}`)} style={{ padding: '16px 24px', fontSize: '14px', color: '#9ca3af', cursor: 'pointer' }}>{c.claimant || '—'}</td>
                     <td style={{ padding: '16px 24px' }}>
                       <span style={{ backgroundColor: c.status === 'active' ? '#052e16' : '#1c1917', color: c.status === 'active' ? '#4ade80' : '#9ca3af', padding: '2px 10px', borderRadius: '99px', fontSize: '12px' }}>
                         {c.status}
                       </span>
                     </td>
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#9ca3af' }}>{c.documents_analyzed}</td>
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#9ca3af' }}>${c.recovery_identified.toLocaleString()}</td>
+                    <td onClick={() => router.push(`/cases/${c.id}`)} style={{ padding: '16px 24px', fontSize: '14px', color: '#9ca3af', cursor: 'pointer' }}>{c.documents_analyzed}</td>
+                    <td onClick={() => router.push(`/cases/${c.id}`)} style={{ padding: '16px 24px', fontSize: '14px', color: c.recovery_identified > 0 ? '#c9a84c' : '#9ca3af', fontWeight: c.recovery_identified > 0 ? 600 : 400, cursor: 'pointer' }}>
+                      ${c.recovery_identified.toLocaleString()}
+                    </td>
+                    <td style={{ padding: '16px 24px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+
+                        {/* Active/Inactive toggle */}
+                        <button
+                          onClick={() => toggleStatus(c)}
+                          title={c.status === 'active' ? 'Mark inactive' : 'Mark active'}
+                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', color: c.status === 'active' ? '#4ade80' : '#6b7280', display: 'flex', alignItems: 'center' }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            {c.status === 'active'
+                              ? <><rect x="1" y="5" width="22" height="14" rx="7"/><circle cx="16" cy="12" r="3" fill="currentColor" stroke="none"/></>
+                              : <><rect x="1" y="5" width="22" height="14" rx="7"/><circle cx="8" cy="12" r="3" fill="currentColor" stroke="none"/></>
+                            }
+                          </svg>
+                        </button>
+
+                        {/* Delete button */}
+                        {confirmDelete === c.id ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button onClick={() => handleDelete(c.id)} style={{ background: '#7f1d1d', border: '1px solid #dc2626', color: '#fca5a5', padding: '3px 10px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>
+                              Confirm
+                            </button>
+                            <button onClick={() => setConfirmDelete(null)} style={{ background: 'transparent', border: '1px solid #1e2d4a', color: '#9ca3af', padding: '3px 10px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDelete(c.id)}
+                            title="Delete case"
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', color: '#4b5563', display: 'flex', alignItems: 'center' }}
+                            onMouseEnter={e => (e.currentTarget.style.color = '#dc2626')}
+                            onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
