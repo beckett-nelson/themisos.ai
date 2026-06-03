@@ -69,9 +69,10 @@ export default function CasePage() {
       if (!resp.ok || data.error) { setError(data.error || "Analysis failed"); setAnalyzing(false); return }
       setResults(data)
       // Parse total recovery from opportunities
-      const parseExposure = (raw: string): number => {
+      const parseExposure = (raw: string | number): number => {
         if (!raw) return 0
-        const s = raw.toUpperCase().replace(/,/g, "")
+        if (typeof raw === "number") return Math.round(raw)
+        const s = raw.toString().toUpperCase().replace(/,/g, "").trim()
         const num = parseFloat(s.replace(/[^0-9.]/g, ""))
         if (isNaN(num)) return 0
         if (s.includes("B")) return Math.round(num * 1_000_000_000)
