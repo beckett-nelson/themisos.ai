@@ -49,6 +49,7 @@ export default function CasePage() {
       const { data } = await supabase.from("cases").select("*").eq("id", params.id).single()
       if (!data) { router.push("/dashboard"); return }
       setCaseData(data)
+      if (data.last_analysis) setResults(data.last_analysis)
     }
     load()
   }, [])
@@ -83,7 +84,8 @@ export default function CasePage() {
       }, 0)
       await supabase.from("cases").update({
         documents_analyzed: (caseData?.documents_analyzed || 0) + 2,
-        recovery_identified: recoveryTotal
+        recovery_identified: recoveryTotal,
+        last_analysis: data
       }).eq("id", params.id)
       setCaseData(prev => prev ? { ...prev, documents_analyzed: (prev.documents_analyzed || 0) + 2, recovery_identified: recoveryTotal } : prev)
     } catch (e: any) {
