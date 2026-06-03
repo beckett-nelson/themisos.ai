@@ -1,0 +1,43 @@
+@media print {
+  body { background: white !important; color: black !important; }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  .print-report {
+    font-family: 'Georgia', serif;
+    max-width: 100%;
+    padding: 0;
+  }
+  .print-header {
+    border-bottom: 2px solid #0a0f1e;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .print-section {
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+  }
+  .print-section h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+    color: #0a0f1e;
+  }
+  .verdict-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .verdict-strong { background: #d4edda; color: #155724; }
+  .verdict-moderate { background: #fff3cd; color: #856404; }
+  .verdict-weak { background: #f8d7da; color: #721c24; }
+  .finding-item { margin-bottom: 8px; padding: 8px; border-left: 3px solid #0a0f1e; }
+  .severity-high { border-color: #dc3545; }
+  .severity-medium { border-color: #ffc107; }
+  .severity-low { border-color: #28a745; }
+  @page { margin: 0.75in; }
+}
