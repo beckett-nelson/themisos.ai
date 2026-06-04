@@ -3,659 +3,231 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ThemisOS — Security & Data Handling</title>
+<title>Security & Data Handling — ThemisOS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ink:#05090F;
-  --ink-mid:#0A1220;
-  --ink-light:#101E33;
-  --ink-border:#1A2E4A;
-  --gold:#C9962B;
-  --gold-light:#E2B44A;
-  --gold-dim:#7A5A18;
-  --gold-glow:rgba(201,150,43,0.12);
-  --parchment:#EDE6D0;
-  --parchment-dim:#9A927E;
-  --white:#FFFFFF;
-  --muted:#6E7D94;
+  --ink:#0a0f1e;
+  --ink-mid:#0d1526;
+  --ink-border:#1e2d4a;
+  --gold:#c9a84c;
+  --gold-dim:rgba(201,168,76,0.15);
+  --parchment:#ede6d0;
+  --muted:#9ca3af;
+  --dimmer:#6b7280;
   --font-serif:'Cormorant Garamond',serif;
   --font-ui:'Syne',sans-serif;
-  --font-mono:'DM Mono',monospace;
 }
 html{scroll-behavior:smooth}
-body{
-  background:var(--ink);
-  color:var(--parchment);
-  font-family:var(--font-ui);
-  font-size:16px;
-  line-height:1.6;
-  overflow-x:hidden;
-}
+body{background:var(--ink);color:var(--parchment);font-family:var(--font-ui);font-size:16px;line-height:1.7;overflow-x:hidden}
 a{color:inherit;text-decoration:none}
 
-/* ── TEXTURE ── */
-body::before{
-  content:'';position:fixed;inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-  pointer-events:none;z-index:0;opacity:0.7;
-}
-
-/* ── NAV ── */
 nav{
-  position:fixed;top:0;left:0;right:0;z-index:200;
+  border-bottom:1px solid var(--ink-border);
+  padding:16px 32px;
   display:flex;align-items:center;justify-content:space-between;
-  padding:1.5rem 3rem;
-  background:rgba(5,9,15,0.9);
-  border-bottom:1px solid var(--ink-border);
-  backdrop-filter:blur(16px);
+  position:sticky;top:0;background:rgba(10,15,30,0.95);backdrop-filter:blur(12px);z-index:100;
 }
-.nav-brand{
-  display:flex;align-items:center;gap:14px;
-  font-family:var(--font-ui);font-size:1.0625rem;font-weight:700;
-  letter-spacing:0.08em;text-transform:uppercase;color:var(--parchment);
-}
-.nav-brand svg{width:28px;height:28px;fill:var(--gold)}
-.nav-back{
-  display:flex;align-items:center;gap:8px;
-  font-size:0.75rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
-  color:var(--muted);transition:color .2s;cursor:pointer;
-  background:none;border:none;font-family:var(--font-ui);
-}
-.nav-back:hover{color:var(--parchment)}
-.nav-back svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand{font-family:var(--font-serif);font-size:20px}
+.brand span{color:var(--gold)}
+nav a.back{color:var(--muted);font-size:14px}
 
-/* ── PAGE HERO ── */
-.page-hero{
-  padding:10rem 2.5rem 5rem;
-  text-align:center;
-  position:relative;z-index:1;
-  overflow:hidden;
-}
-.page-hero::after{
-  content:'';position:absolute;inset:0;
-  background-image:repeating-linear-gradient(
-    90deg,
-    rgba(26,46,74,0.18) 0px,
-    rgba(26,46,74,0.18) 1px,
-    transparent 1px,
-    transparent 120px
-  );
-  pointer-events:none;z-index:0;
-}
-.hero-glow{
-  position:absolute;top:-100px;left:50%;transform:translateX(-50%);
-  width:800px;height:600px;
-  background:radial-gradient(ellipse at center top, rgba(201,150,43,0.07) 0%, transparent 65%);
-  pointer-events:none;
-}
-.page-hero-inner{position:relative;z-index:1;max-width:760px;margin:0 auto}
+main{max-width:720px;margin:0 auto;padding:64px 32px 96px}
 
-.page-tag{
-  display:inline-flex;align-items:center;gap:10px;
-  font-family:var(--font-mono);font-size:0.6875rem;
-  letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);
-  margin-bottom:1.75rem;
-  opacity:0;transform:translateY(12px);
-  animation:fadeUp .7s .2s forwards;
+.page-kicker{
+  font-size:12px;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--gold);font-family:var(--font-ui);font-weight:500;margin-bottom:16px;
 }
-.page-tag::before,.page-tag::after{content:'';width:28px;height:1px;background:currentColor;opacity:0.5}
+h1{
+  font-family:var(--font-serif);font-size:42px;font-weight:400;
+  line-height:1.15;margin-bottom:16px;color:#fff;
+}
+.page-intro{color:var(--muted);font-size:16px;line-height:1.7;margin-bottom:48px;max-width:560px}
 
-.page-title{
-  font-family:var(--font-serif);
-  font-size:clamp(3rem,7vw,5.5rem);
-  font-weight:600;line-height:0.95;
-  letter-spacing:-0.02em;color:var(--white);
-  margin-bottom:0.5rem;
-  opacity:0;transform:translateY(16px);
-  animation:fadeUp .9s .35s forwards;
+/* Commitment cards grid */
+.commitments{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:48px;
 }
-.page-title em{font-style:italic;color:var(--gold)}
-.page-rule{
-  width:60px;height:1px;background:var(--gold-dim);
-  margin:1.75rem auto;
-  opacity:0;animation:fadeIn .7s .55s forwards;
+.commit-card{
+  background:var(--ink-mid);border:1px solid var(--ink-border);
+  border-radius:12px;padding:24px;
+  border-top:2px solid var(--gold);
 }
-.page-sub{
-  font-family:var(--font-serif);font-style:italic;
-  font-size:clamp(1rem,2vw,1.25rem);
-  line-height:1.7;color:var(--parchment-dim);
-  max-width:580px;margin:0 auto;
-  opacity:0;transform:translateY(12px);
-  animation:fadeUp .8s .65s forwards;
-}
+.commit-icon{font-size:22px;margin-bottom:12px}
+.commit-title{font-size:15px;font-weight:600;color:#fff;margin-bottom:6px}
+.commit-desc{font-size:13px;color:var(--muted);line-height:1.6}
 
-/* ── COMMITMENT STRIP ── */
-.commit-strip{
-  border-top:1px solid var(--ink-border);
-  border-bottom:1px solid var(--ink-border);
-  background:var(--ink-mid);
-  position:relative;z-index:1;
-}
-.commit-inner{
-  max-width:1100px;margin:0 auto;
-  display:grid;grid-template-columns:repeat(4,1fr);
-  gap:0;
-}
-@media(max-width:800px){.commit-inner{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:480px){.commit-inner{grid-template-columns:1fr}}
-.commit-item{
-  padding:2rem 1.75rem;
-  border-right:1px solid var(--ink-border);
-  display:flex;flex-direction:column;align-items:flex-start;gap:0.625rem;
-}
-.commit-item:last-child{border-right:none}
-.commit-icon{
-  font-size:1.5rem;opacity:0.75;margin-bottom:0.25rem;
-}
-.commit-label{
-  font-size:0.6875rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
-  color:var(--gold);font-family:var(--font-mono);
-}
-.commit-text{
-  font-family:var(--font-serif);font-style:italic;
-  font-size:0.9rem;line-height:1.55;color:var(--parchment-dim);
-}
-
-/* ── MAIN CONTENT ── */
-.content-wrap{
-  max-width:860px;margin:0 auto;
-  padding:5rem 2.5rem 7rem;
-  position:relative;z-index:1;
-}
-
-/* ── PRINCIPLE BLOCK ── */
-.principle{
-  margin-bottom:4.5rem;
-  opacity:0;transform:translateY(20px);
-  transition:opacity .65s ease,transform .65s ease;
-}
-.principle.visible{opacity:1;transform:none}
-
-.principle-header{
-  display:flex;align-items:flex-start;gap:1.5rem;
-  margin-bottom:1.5rem;
-  padding-bottom:1.25rem;
+/* Sections */
+.section{margin-bottom:48px}
+.section-title{
+  font-family:var(--font-serif);font-size:24px;font-weight:600;
+  color:#fff;margin-bottom:8px;padding-bottom:12px;
   border-bottom:1px solid var(--ink-border);
 }
-.principle-num{
-  font-family:var(--font-mono);font-size:0.625rem;font-weight:500;
-  color:var(--gold);background:rgba(201,150,43,0.08);
-  border:1px solid rgba(201,150,43,0.2);border-radius:1px;
-  padding:3px 10px;flex-shrink:0;margin-top:6px;letter-spacing:0.06em;
-}
-.principle-title{
-  font-family:var(--font-serif);
-  font-size:clamp(1.5rem,3vw,2.25rem);
-  font-weight:600;line-height:1.1;
-  color:var(--white);letter-spacing:-0.01em;
-}
-.principle-title em{font-style:italic;color:var(--gold)}
+.section p{font-size:15px;color:var(--muted);line-height:1.75;margin-bottom:14px}
+.section p:last-child{margin-bottom:0}
 
-.principle-body{
-  font-family:var(--font-serif);font-size:1.0625rem;
-  line-height:1.8;color:var(--parchment-dim);
-  margin-bottom:1.5rem;
+/* Anthropic callout */
+.anthropic-block{
+  background:var(--ink-mid);border:1px solid var(--ink-border);
+  border-left:3px solid var(--gold);border-radius:8px;
+  padding:20px 24px;margin:20px 0;
 }
+.anthropic-block .ab-label{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:6px}
+.anthropic-block p{font-size:14px;color:var(--muted);line-height:1.65;margin:0}
+.anthropic-block a{color:var(--gold);text-decoration:underline;text-underline-offset:3px}
 
-/* ── RULE LIST ── */
-.rule-list{
-  list-style:none;display:flex;flex-direction:column;gap:0;
-  border:1px solid var(--ink-border);border-radius:2px;overflow:hidden;
-  margin-bottom:1.5rem;
-}
-.rule-item{
-  display:flex;align-items:flex-start;gap:1.25rem;
-  padding:1.25rem 1.5rem;
-  border-bottom:1px solid var(--ink-border);
-  transition:background .2s;
-}
-.rule-item:last-child{border-bottom:none}
-.rule-item:hover{background:var(--ink-light)}
-.rule-check{
-  width:20px;height:20px;border-radius:50%;
-  background:rgba(201,150,43,0.1);border:1px solid var(--gold-dim);
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;margin-top:1px;
-}
-.rule-check svg{width:10px;height:10px;stroke:var(--gold);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.rule-text{
-  font-family:var(--font-serif);font-size:1rem;
-  line-height:1.65;color:var(--parchment-dim);
-}
-.rule-text strong{
-  font-weight:600;color:var(--parchment);font-style:normal;
-}
+/* Data flow table */
+.data-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:14px}
+.data-table th{text-align:left;padding:10px 14px;color:var(--gold);font-weight:500;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--ink-border)}
+.data-table td{padding:12px 14px;color:var(--muted);border-bottom:1px solid rgba(30,45,74,0.5);vertical-align:top}
+.data-table td:first-child{color:#fff;font-weight:500;width:35%}
+.data-table tr:last-child td{border-bottom:none}
 
-/* ── NEVER LIST ── */
-.never-list{
-  list-style:none;display:flex;flex-direction:column;gap:0;
-  border:1px solid rgba(255,90,90,0.15);border-radius:2px;overflow:hidden;
+/* Engagement letter CTA */
+.cta-block{
+  background:var(--ink-mid);border:1px solid var(--ink-border);
+  border-radius:12px;padding:32px;margin-top:48px;
 }
-.never-item{
-  display:flex;align-items:flex-start;gap:1.25rem;
-  padding:1.1rem 1.5rem;
-  border-bottom:1px solid rgba(255,90,90,0.1);
-  background:rgba(255,90,90,0.02);
+.cta-block h3{font-family:var(--font-serif);font-size:22px;color:#fff;margin-bottom:8px}
+.cta-block p{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:24px}
+.cta-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.btn-gold{
+  display:inline-block;background:var(--gold);color:#0a0f1e;
+  padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;
 }
-.never-item:last-child{border-bottom:none}
-.never-x{
-  width:20px;height:20px;border-radius:50%;
-  background:rgba(255,90,90,0.08);border:1px solid rgba(255,90,90,0.25);
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;margin-top:1px;
-  font-family:var(--font-mono);font-size:0.625rem;color:#ff5a5a;font-weight:700;
+.btn-outline{
+  display:inline-block;border:1px solid var(--ink-border);color:var(--muted);
+  padding:12px 24px;border-radius:8px;font-size:14px;
 }
-.never-text{
-  font-family:var(--font-serif);font-size:1rem;
-  line-height:1.65;color:var(--parchment-dim);
-}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
 
-/* ── HIGHLIGHT QUOTE ── */
-.highlight-quote{
-  border-left:2px solid var(--gold);
-  padding:1.25rem 1.5rem;
-  background:rgba(201,150,43,0.04);
-  margin:1.75rem 0;
-  border-radius:0 2px 2px 0;
-}
-.highlight-quote p{
-  font-family:var(--font-serif);font-style:italic;
-  font-size:1.125rem;line-height:1.75;color:var(--parchment-dim);
-}
-
-/* ── PRIVILEGE CALLOUT ── */
-.privilege-callout{
-  background:var(--ink-mid);
-  border:1px solid var(--ink-border);
-  border-radius:2px;
-  padding:2.5rem;
-  margin:2rem 0;
-  position:relative;overflow:hidden;
-}
-.privilege-callout::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg, var(--gold) 0%, var(--gold-dim) 100%);
-}
-.privilege-callout-tag{
-  font-family:var(--font-mono);font-size:0.625rem;
-  letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);
-  margin-bottom:0.75rem;
-}
-.privilege-callout h3{
-  font-family:var(--font-serif);font-size:1.375rem;font-weight:600;
-  color:var(--white);margin-bottom:0.75rem;line-height:1.2;
-}
-.privilege-callout p{
-  font-family:var(--font-serif);font-style:italic;
-  font-size:1rem;line-height:1.75;color:var(--parchment-dim);
-}
-
-/* ── SECTION DIVIDER ── */
-.s-divider{
-  width:100%;height:1px;background:var(--ink-border);
-  margin:4rem 0;position:relative;
-}
-.s-divider::after{
-  content:'';position:absolute;left:50%;top:50%;
-  transform:translate(-50%,-50%);
-  width:6px;height:6px;border-radius:50%;
-  background:var(--gold-dim);
-}
-
-/* ── CONTACT STRIP ── */
-.contact-strip{
-  border:1px solid var(--ink-border);border-radius:2px;
-  padding:2rem 2.5rem;
-  background:var(--ink-mid);
-  display:flex;align-items:center;justify-content:space-between;
-  gap:2rem;flex-wrap:wrap;
-  margin-top:4rem;
-}
-.contact-strip-text h4{
-  font-family:var(--font-serif);font-size:1.25rem;font-weight:600;
-  color:var(--white);margin-bottom:0.375rem;
-}
-.contact-strip-text p{
-  font-family:var(--font-serif);font-style:italic;
-  font-size:0.9375rem;color:var(--parchment-dim);
-}
-.btn-contact-sm{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:0.75rem 1.75rem;
-  background:var(--gold);color:var(--ink);
-  font-family:var(--font-ui);font-size:0.75rem;font-weight:700;
-  letter-spacing:0.1em;text-transform:uppercase;
-  border:none;border-radius:2px;cursor:pointer;
-  transition:all .2s;white-space:nowrap;
-  text-decoration:none;
-}
-.btn-contact-sm:hover{background:var(--gold-light);transform:translateY(-1px)}
-
-/* ── FOOTER ── */
 footer{
-  border-top:1px solid var(--ink-border);
-  padding:2.5rem 3rem;
-  position:relative;z-index:1;
+  border-top:1px solid var(--ink-border);padding:24px 32px;
+  text-align:center;color:var(--dimmer);font-size:13px;
 }
-.foot-inner{
-  max-width:1100px;margin:0 auto;
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;
-}
-.foot-brand{
-  display:flex;align-items:center;gap:10px;
-  font-family:var(--font-ui);font-size:0.875rem;font-weight:700;
-  letter-spacing:0.08em;text-transform:uppercase;color:var(--parchment);
-}
-.foot-brand svg{width:18px;height:18px;fill:var(--gold)}
-.foot-links{
-  display:flex;gap:2rem;list-style:none;
-  font-size:0.75rem;color:var(--muted);letter-spacing:0.04em;
-}
-.foot-links a{color:var(--muted)}
-.foot-links a:hover{color:var(--parchment-dim)}
-.foot-copy{font-size:0.6875rem;color:var(--muted)}
+footer a{color:var(--muted)}footer a:hover{color:var(--gold)}
 
-/* ── ANIMATIONS ── */
-@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
-@keyframes fadeIn{to{opacity:1}}
+@media(max-width:600px){
+  .commitments{grid-template-columns:1fr}
+  h1{font-size:32px}
+  main{padding:48px 20px 80px}
+  nav{padding:16px 20px}
+}
 </style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
-  <div class="nav-brand">
-    <svg viewBox="0 0 64 64" fill="none">
-      <rect x="30" y="8" width="4" height="46" rx="2" fill="var(--gold)"/>
-      <rect x="18" y="52" width="28" height="3" rx="1.5" fill="var(--gold)"/>
-      <circle cx="32" cy="8" r="4" fill="var(--gold)"/>
-      <rect x="6" y="22" width="52" height="2.5" rx="1.25" fill="var(--gold)"/>
-      <line x1="10" y1="24.5" x2="10" y2="34" stroke="var(--gold)" stroke-width="1.5"/>
-      <line x1="54" y1="24.5" x2="54" y2="34" stroke="var(--gold)" stroke-width="1.5"/>
-      <path d="M4 34 Q10 39 16 34" stroke="var(--gold)" stroke-width="2" fill="none"/>
-      <path d="M48 34 Q54 39 60 34" stroke="var(--gold)" stroke-width="2" fill="none"/>
-    </svg>
-    ThemisOS
-  </div>
-  <button class="nav-back" onclick="window.location.href='index.html'">
-    <svg viewBox="0 0 14 14"><path d="M9 2L4 7l5 5" /></svg>
-    Back to Home
-  </button>
+  <div class="brand">Themis<span>OS</span></div>
+  <a href="index.html" class="back">← Back to home</a>
 </nav>
 
-<!-- PAGE HERO -->
-<div class="page-hero">
-  <div class="hero-glow"></div>
-  <div class="page-hero-inner">
-    <div class="page-tag">ThemisOS — Trust &amp; Security</div>
-    <h1 class="page-title">Data Handling<br>&amp; <em>Privilege</em></h1>
-    <div class="page-rule"></div>
-    <p class="page-sub">
-      What we do with your documents, how we protect attorney-client privilege,
-      and the commitments we make to every attorney we work with.
-    </p>
-  </div>
-</div>
+<main>
 
-<!-- COMMITMENT STRIP -->
-<div class="commit-strip">
-  <div class="commit-inner">
-    <div class="commit-item">
+  <p class="page-kicker">Security &amp; Data Handling</p>
+  <h1>Your client's documents<br>stay yours.</h1>
+  <p class="page-intro">
+    ThemisOS is built for plaintiff attorneys. We understand that the documents you upload carry privilege, confidentiality obligations, and real consequences. This page explains exactly how your data is handled — no vague assurances.
+  </p>
+
+  <!-- Four commitments -->
+  <div class="commitments">
+    <div class="commit-card">
+      <div class="commit-icon">🗑️</div>
+      <div class="commit-title">Zero data retention</div>
+      <div class="commit-desc">Uploaded documents are processed in memory and never stored on our servers. Nothing persists after your session ends.</div>
+    </div>
+    <div class="commit-card">
+      <div class="commit-icon">⚖️</div>
+      <div class="commit-title">Privilege protected</div>
+      <div class="commit-desc">We treat every document as attorney work product. ThemisOS does not review, log, or retain the content of your uploads.</div>
+    </div>
+    <div class="commit-card">
+      <div class="commit-icon">🚫</div>
+      <div class="commit-title">Never used for training</div>
+      <div class="commit-desc">Your documents and outputs are not used to train any AI model — ours or anyone else's. We have no interest in your client data beyond processing your request.</div>
+    </div>
+    <div class="commit-card">
       <div class="commit-icon">🔒</div>
-      <div class="commit-label">No Data Retention</div>
-      <div class="commit-text">Documents are not stored after your session ends</div>
-    </div>
-    <div class="commit-item">
-      <div class="commit-icon">⚖</div>
-      <div class="commit-label">Privilege Protected</div>
-      <div class="commit-text">Attorney-client privilege built into every workflow</div>
-    </div>
-    <div class="commit-item">
-      <div class="commit-icon">◈</div>
-      <div class="commit-label">No Model Training</div>
-      <div class="commit-text">Your files never train any AI model — ours or third-party</div>
-    </div>
-    <div class="commit-item">
-      <div class="commit-icon">✦</div>
-      <div class="commit-label">No Third-Party Sharing</div>
-      <div class="commit-text">We do not sell, license, or share your data — ever</div>
-    </div>
-  </div>
-</div>
-
-<!-- MAIN CONTENT -->
-<div class="content-wrap">
-
-  <!-- PRINCIPLE 01 -->
-  <div class="principle">
-    <div class="principle-header">
-      <span class="principle-num">01</span>
-      <h2 class="principle-title">Your documents are <em>yours.</em><br>Full stop.</h2>
-    </div>
-    <p class="principle-body">
-      When you upload policy documents, complaints, correspondence, or any other materials to ThemisOS,
-      those files exist for one purpose only: completing the analysis you asked for.
-      They are not indexed, catalogued, stored in a database, or reviewed by anyone other than the
-      team you've authorized to work on your matter.
-    </p>
-    <div class="highlight-quote">
-      <p>We built ThemisOS for plaintiff attorneys. We understand that the documents you upload may be the most sensitive materials in an active case. We treat them accordingly.</p>
-    </div>
-    <ul class="rule-list">
-      <li class="rule-item">
-        <span class="rule-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg></span>
-        <span class="rule-text"><strong>Session-scoped processing.</strong> Documents are processed in isolated environments tied to your active session. When the session closes, document content is not retained.</span>
-      </li>
-      <li class="rule-item">
-        <span class="rule-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg></span>
-        <span class="rule-text"><strong>No long-term storage by default.</strong> Unless you and ThemisOS have separately agreed in writing to retain materials for a multi-session engagement, files are not stored beyond the active session.</span>
-      </li>
-      <li class="rule-item">
-        <span class="rule-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg></span>
-        <span class="rule-text"><strong>Encrypted in transit.</strong> All document uploads and data transmission occur over TLS-encrypted connections. Your files are never transmitted in plain text.</span>
-      </li>
-      <li class="rule-item">
-        <span class="rule-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg></span>
-        <span class="rule-text"><strong>No third-party access.</strong> We do not share, sell, license, or otherwise provide your documents or their contents to any third party — for any reason, ever.</span>
-      </li>
-    </ul>
-  </div>
-
-  <div class="s-divider"></div>
-
-  <!-- PRINCIPLE 02 -->
-  <div class="principle">
-    <div class="principle-header">
-      <span class="principle-num">02</span>
-      <h2 class="principle-title">We never use your documents<br>to <em>train AI models.</em></h2>
-    </div>
-    <p class="principle-body">
-      This is non-negotiable and applies without exception. The materials you share with ThemisOS —
-      policy documents, litigation filings, demand letters, adjuster correspondence, or anything else —
-      are never used to improve, fine-tune, or train any AI model, whether that's our own systems
-      or any third-party model provider we work with.
-    </p>
-    <ul class="rule-list">
-      <li class="rule-item">
-        <span class="rule-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg></span>
-        <span class="rule-text"><strong>Zero-training guarantee.</strong> Your document content is used solely to produce the output you requested. It is not fed back into any training pipeline.</span>
-      </li>
-      <li class="rule-item">
-        <span class="rule-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg></span>
-        <span class="rule-text"><strong>Applies to all model providers.</strong> Where ThemisOS uses third-party AI infrastructure, we use APIs with contractual data processing agreements that prohibit training on customer data.</span>
-      </li>
-      <li class="rule-item">
-        <span class="rule-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg></span>
-        <span class="rule-text"><strong>No behavioral profiling.</strong> We do not analyze your query patterns, matter types, or usage behavior for any commercial purpose.</span>
-      </li>
-    </ul>
-    <div class="highlight-quote">
-      <p>The carrier on the other side of your case does not get smarter because you used ThemisOS. Your documents work for you — not for anyone else.</p>
+      <div class="commit-title">No third-party sharing</div>
+      <div class="commit-desc">Your data is not sold, shared, or disclosed to any third party. The only external service in the pipeline is the Anthropic API, governed by enterprise-grade terms.</div>
     </div>
   </div>
 
-  <div class="s-divider"></div>
+  <!-- How it works -->
+  <div class="section">
+    <div class="section-title">How your data moves</div>
+    <p>When you upload a document, here is the exact sequence:</p>
+    <table class="data-table">
+      <thead>
+        <tr><th>Step</th><th>What happens</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Upload</td><td>Your PDF is transmitted over encrypted HTTPS directly to our processing backend. It is never written to disk.</td></tr>
+        <tr><td>Extraction</td><td>Text is extracted from the document in memory using our pipeline, then sent to the Anthropic API for analysis.</td></tr>
+        <tr><td>Analysis</td><td>Anthropic's Claude model processes the text and returns results. Under Anthropic's API terms, your data is not used for model training.</td></tr>
+        <tr><td>Delivery</td><td>Results are returned to your browser session. No copy is retained on our end.</td></tr>
+        <tr><td>Session end</td><td>All in-memory data is cleared. Nothing is logged, cached, or recoverable after you close the session.</td></tr>
+      </tbody>
+    </table>
+  </div>
 
-  <!-- PRINCIPLE 03 -->
-  <div class="principle">
-    <div class="principle-header">
-      <span class="principle-num">03</span>
-      <h2 class="principle-title">Attorney-client privilege<br>is <em>protected by design.</em></h2>
-    </div>
-    <p class="principle-body">
-      ThemisOS is built for attorneys, which means privilege is not an afterthought —
-      it's a foundational design constraint. Every workflow, every data handling decision,
-      and every third-party integration is evaluated against the question:
-      does this preserve or risk attorney-client privilege?
+  <!-- Anthropic posture -->
+  <div class="section">
+    <div class="section-title">Powered by Anthropic's API</div>
+    <p>
+      ThemisOS uses Anthropic's Claude API as its AI backbone. Anthropic is one of the most rigorously safety-focused AI companies operating today, and their API terms provide strong contractual data protections.
     </p>
-
-    <div class="privilege-callout">
-      <div class="privilege-callout-tag">Privilege Framework</div>
-      <h3>ThemisOS operates as a tool under attorney direction.</h3>
+    <div class="anthropic-block">
+      <div class="ab-label">Anthropic API Data Policy</div>
       <p>
-        The platform does not give legal advice, does not establish independent legal relationships,
-        and does not communicate with your clients. You direct the analysis. You own the output.
-        ThemisOS is an extension of your work product — not a separate actor in your matter.
+        Under Anthropic's standard API usage policy, data submitted via the API is not used to train or improve Anthropic's models. Anthropic maintains enterprise-grade infrastructure with encryption in transit and at rest. You can review their policy directly at <a href="https://www.anthropic.com/legal/privacy" target="_blank">anthropic.com/legal/privacy</a>.
       </p>
     </div>
-
-    <ul class="rule-list">
-      <li class="rule-item">
-        <span class="rule-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg></span>
-        <span class="rule-text"><strong>Attorney-directed engagement only.</strong> ThemisOS does not operate autonomously on your files. Every analysis is run at your direction, by your team or directly with our founder.</span>
-      </li>
-      <li class="rule-item">
-        <span class="rule-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg></span>
-        <span class="rule-text"><strong>Output is work product.</strong> The recovery memos, coverage analyses, and cross-examination sequences ThemisOS generates are produced for and owned by the attorney who commissioned them.</span>
-      </li>
-      <li class="rule-item">
-        <span class="rule-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg></span>
-        <span class="rule-text"><strong>No external disclosure.</strong> ThemisOS will not disclose, summarize, or reference the contents of your matter to any party outside the engagement — including in marketing, case studies, or public materials — without your explicit written consent.</span>
-      </li>
-      <li class="rule-item">
-        <span class="rule-check"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2"/></svg></span>
-        <span class="rule-text"><strong>Confidentiality by default.</strong> All inquiries, matter details, and client information shared during onboarding or in the course of an engagement are treated as confidential from the moment of first contact.</span>
-      </li>
-    </ul>
-  </div>
-
-  <div class="s-divider"></div>
-
-  <!-- PRINCIPLE 04 -->
-  <div class="principle">
-    <div class="principle-header">
-      <span class="principle-num">04</span>
-      <h2 class="principle-title">What we <em>never</em> do.</h2>
-    </div>
-    <p class="principle-body">
-      Some commitments are best stated plainly. Here is an explicit list of things
-      ThemisOS does not do — not as a matter of policy preference, but as a hard constraint
-      on how this platform operates.
+    <p>
+      This means your documents benefit from two layers of protection: ThemisOS's own zero-retention architecture, and Anthropic's contractual commitment not to train on API data. The two together are more protective than most general-purpose legal research tools currently on the market.
     </p>
-    <ul class="never-list">
-      <li class="never-item">
-        <span class="never-x">✕</span>
-        <span class="never-text">Sell, rent, license, or transfer your data or document contents to any third party</span>
-      </li>
-      <li class="never-item">
-        <span class="never-x">✕</span>
-        <span class="never-text">Use your documents to train, fine-tune, or benchmark any AI model</span>
-      </li>
-      <li class="never-item">
-        <span class="never-x">✕</span>
-        <span class="never-text">Retain document content after a session ends without explicit written agreement</span>
-      </li>
-      <li class="never-item">
-        <span class="never-x">✕</span>
-        <span class="never-text">Reference, summarize, or disclose your matter in any public or marketing context</span>
-      </li>
-      <li class="never-item">
-        <span class="never-x">✕</span>
-        <span class="never-text">Contact your clients or opposing parties for any reason</span>
-      </li>
-      <li class="never-item">
-        <span class="never-x">✕</span>
-        <span class="never-text">Use tracking pixels, analytics scripts, or cookies on this website</span>
-      </li>
-      <li class="never-item">
-        <span class="never-x">✕</span>
-        <span class="never-text">Provide your contact information to any sales list or third-party service</span>
-      </li>
-    </ul>
   </div>
 
-  <div class="s-divider"></div>
+  <!-- What we do collect -->
+  <div class="section">
+    <div class="section-title">What we do collect</div>
+    <p>We believe in being specific. Here is the limited information ThemisOS collects:</p>
+    <table class="data-table">
+      <thead>
+        <tr><th>Data</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Email address</td><td>Used solely for account access and support communication. Never shared.</td></tr>
+        <tr><td>Firm name</td><td>Used to associate your account with your organization. Not disclosed externally.</td></tr>
+        <tr><td>Usage metadata</td><td>Anonymous counts of sessions and queries, used only to improve the platform. No document content is included.</td></tr>
+      </tbody>
+    </table>
+    <p>We do not run analytics that track document content, use cookies for advertising, or share any information with data brokers.</p>
+  </div>
 
-  <!-- PRINCIPLE 05 -->
-  <div class="principle">
-    <div class="principle-header">
-      <span class="principle-num">05</span>
-      <h2 class="principle-title">Questions or custom<br><em>data agreements.</em></h2>
-    </div>
-    <p class="principle-body">
-      Enterprise clients, law firms with specific data governance requirements, or attorneys
-      who need a written data processing agreement before engagement are welcome to request one.
-      We will work with you or your IT/compliance team to meet your firm's requirements.
+  <!-- Written agreement CTA -->
+  <div class="cta-block">
+    <h3>Request a written data handling agreement</h3>
+    <p>
+      If your firm requires a formal data handling or confidentiality agreement before use — or if you'd like our engagement letter spelling out these commitments in plain terms — we'll provide one. Most clients receive it within one business day.
     </p>
-    <div class="highlight-quote">
-      <p>If your bar association, malpractice insurer, or firm policy requires specific data handling representations before using AI tools, reach out. We will put it in writing.</p>
+    <div class="cta-row">
+      <a href="mailto:beckett@themisos.ai?subject=Data Handling Agreement Request" class="btn-gold">Request Agreement</a>
+      <a href="mailto:beckett@themisos.ai" class="btn-outline">Ask a question</a>
     </div>
   </div>
 
-  <!-- CONTACT STRIP -->
-  <div class="contact-strip">
-    <div class="contact-strip-text">
-      <h4>Security questions or data agreements</h4>
-      <p>Reach out directly — all inquiries handled by the founder, not a support queue.</p>
-    </div>
-    <a class="btn-contact-sm" href="mailto:beckett@themisos.ai?subject=ThemisOS%20%E2%80%94%20Security%20%2F%20Data%20Agreement&body=Hi%20Beckett%2C%0A%0AI%20have%20a%20question%20about%20ThemisOS%20data%20handling%3A%0A%0A">
-      beckett@themisos.ai
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6h10M7 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
-  </div>
+</main>
 
-</div>
-
-<!-- FOOTER -->
 <footer>
-  <div class="foot-inner">
-    <div class="foot-brand">
-      <svg viewBox="0 0 64 64" fill="none">
-        <rect x="30" y="8" width="4" height="44" rx="2" fill="var(--gold)"/>
-        <rect x="20" y="50" width="24" height="2.5" rx="1.25" fill="var(--gold)"/>
-        <circle cx="32" cy="8" r="3.5" fill="var(--gold)"/>
-        <rect x="8" y="20" width="48" height="2" rx="1" fill="var(--gold)"/>
-        <line x1="12" y1="22" x2="12" y2="31" stroke="var(--gold)" stroke-width="1.5"/>
-        <line x1="52" y1="22" x2="52" y2="31" stroke="var(--gold)" stroke-width="1.5"/>
-        <path d="M6 31 Q12 36 18 31" stroke="var(--gold)" stroke-width="2" fill="none"/>
-        <path d="M46 31 Q52 36 58 31" stroke="var(--gold)" stroke-width="2" fill="none"/>
-      </svg>
-      ThemisOS
-    </div>
-    <ul class="foot-links">
-      <li><a href="index.html">Home</a></li>
-      <li><a href="security.html">Security</a></li>
-      <li><a href="index.html#contact">Contact</a></li>
-    </ul>
-    <div class="foot-copy">© 2026 ThemisOS. All rights reserved.</div>
-  </div>
+  <p>© 2025 ThemisOS &nbsp;·&nbsp; <a href="index.html">Home</a> &nbsp;·&nbsp; <a href="mailto:beckett@themisos.ai">beckett@themisos.ai</a></p>
 </footer>
 
-<script>
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach((e, i) => {
-    if (e.isIntersecting) {
-      setTimeout(() => e.target.classList.add('visible'), i * 100);
-      observer.unobserve(e.target);
-    }
-  });
-}, { threshold: 0.06, rootMargin: '0px 0px -40px 0px' });
-document.querySelectorAll('.principle').forEach(el => observer.observe(el));
-</script>
 </body>
 </html>
