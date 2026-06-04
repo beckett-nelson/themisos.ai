@@ -6,227 +6,529 @@
 <title>Security & Data Handling — ThemisOS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ink:#0a0f1e;
-  --ink-mid:#0d1526;
-  --ink-border:#1e2d4a;
-  --gold:#c9a84c;
-  --gold-dim:rgba(201,168,76,0.15);
-  --parchment:#ede6d0;
-  --muted:#9ca3af;
-  --dimmer:#6b7280;
+  --ink:#05090F;
+  --ink-mid:#0A1220;
+  --ink-light:#101E33;
+  --ink-border:#1A2E4A;
+  --gold:#C9962B;
+  --gold-light:#E2B44A;
+  --gold-dim:#7A5A18;
+  --gold-glow:rgba(201,150,43,0.15);
+  --parchment:#EDE6D0;
+  --parchment-dim:#9A927E;
+  --white:#FFFFFF;
+  --muted:#6E7D94;
+  --red-dim:rgba(180,60,60,0.18);
+  --red:#c0544a;
   --font-serif:'Cormorant Garamond',serif;
   --font-ui:'Syne',sans-serif;
+  --font-mono:'DM Mono',monospace;
 }
 html{scroll-behavior:smooth}
-body{background:var(--ink);color:var(--parchment);font-family:var(--font-ui);font-size:16px;line-height:1.7;overflow-x:hidden}
+body{
+  background:var(--ink);
+  color:var(--parchment);
+  font-family:var(--font-ui);
+  font-size:16px;
+  line-height:1.6;
+  overflow-x:hidden;
+}
 a{color:inherit;text-decoration:none}
 
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;opacity:0.7;
+}
+
+/* NAV */
 nav{
-  border-bottom:1px solid var(--ink-border);
-  padding:16px 32px;
+  position:fixed;top:0;left:0;right:0;z-index:200;
   display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;background:rgba(10,15,30,0.95);backdrop-filter:blur(12px);z-index:100;
+  padding:1.5rem 3rem;
+  background:rgba(5,9,15,0.92);
+  border-bottom:1px solid var(--ink-border);
+  backdrop-filter:blur(16px);
 }
-.brand{font-family:var(--font-serif);font-size:20px}
-.brand span{color:var(--gold)}
-nav a.back{color:var(--muted);font-size:14px}
+.nav-brand{
+  font-family:var(--font-serif);
+  font-size:1.25rem;
+  font-weight:600;
+  letter-spacing:0.08em;
+  color:var(--white);
+  display:flex;align-items:center;gap:0.75rem;
+}
+.nav-brand svg{width:22px;height:22px;opacity:0.85}
+.nav-back{
+  font-size:0.8rem;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  display:flex;align-items:center;gap:0.4rem;
+  transition:color .2s;
+}
+.nav-back:hover{color:var(--gold)}
 
-main{max-width:720px;margin:0 auto;padding:64px 32px 96px}
-
-.page-kicker{
-  font-size:12px;letter-spacing:0.12em;text-transform:uppercase;
-  color:var(--gold);font-family:var(--font-ui);font-weight:500;margin-bottom:16px;
-}
-h1{
-  font-family:var(--font-serif);font-size:42px;font-weight:400;
-  line-height:1.15;margin-bottom:16px;color:#fff;
-}
-.page-intro{color:var(--muted);font-size:16px;line-height:1.7;margin-bottom:48px;max-width:560px}
-
-/* Commitment cards grid */
-.commitments{
-  display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:48px;
-}
-.commit-card{
-  background:var(--ink-mid);border:1px solid var(--ink-border);
-  border-radius:12px;padding:24px;
-  border-top:2px solid var(--gold);
-}
-.commit-icon{font-size:22px;margin-bottom:12px}
-.commit-title{font-size:15px;font-weight:600;color:#fff;margin-bottom:6px}
-.commit-desc{font-size:13px;color:var(--muted);line-height:1.6}
-
-/* Sections */
-.section{margin-bottom:48px}
-.section-title{
-  font-family:var(--font-serif);font-size:24px;font-weight:600;
-  color:#fff;margin-bottom:8px;padding-bottom:12px;
+/* HERO */
+.hero{
+  position:relative;z-index:1;
+  padding:10rem 3rem 6rem;
+  text-align:center;
   border-bottom:1px solid var(--ink-border);
 }
-.section p{font-size:15px;color:var(--muted);line-height:1.75;margin-bottom:14px}
-.section p:last-child{margin-bottom:0}
-
-/* Anthropic callout */
-.anthropic-block{
-  background:var(--ink-mid);border:1px solid var(--ink-border);
-  border-left:3px solid var(--gold);border-radius:8px;
-  padding:20px 24px;margin:20px 0;
+.hero-rule{
+  display:flex;align-items:center;justify-content:center;gap:1rem;
+  margin-bottom:2.5rem;
 }
-.anthropic-block .ab-label{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:6px}
-.anthropic-block p{font-size:14px;color:var(--muted);line-height:1.65;margin:0}
-.anthropic-block a{color:var(--gold);text-decoration:underline;text-underline-offset:3px}
+.hero-rule span{
+  font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--gold);font-family:var(--font-ui);font-weight:500;
+}
+.hero-rule::before,.hero-rule::after{
+  content:'';flex:1;max-width:80px;height:1px;background:var(--gold-dim);
+}
+.hero h1{
+  font-family:var(--font-serif);
+  font-size:clamp(3rem,7vw,5.5rem);
+  font-weight:400;
+  line-height:1.05;
+  color:var(--white);
+  margin-bottom:1.5rem;
+}
+.hero h1 em{color:var(--gold);font-style:italic}
+.hero-divider{width:48px;height:1px;background:var(--gold);margin:0 auto 2rem}
+.hero p{
+  font-family:var(--font-serif);
+  font-size:1.35rem;
+  font-style:italic;
+  color:var(--parchment-dim);
+  max-width:640px;
+  margin:0 auto;
+  line-height:1.7;
+}
 
-/* Data flow table */
-.data-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:14px}
-.data-table th{text-align:left;padding:10px 14px;color:var(--gold);font-weight:500;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--ink-border)}
-.data-table td{padding:12px 14px;color:var(--muted);border-bottom:1px solid rgba(30,45,74,0.5);vertical-align:top}
-.data-table td:first-child{color:#fff;font-weight:500;width:35%}
-.data-table tr:last-child td{border-bottom:none}
+/* TRUST STRIP */
+.trust-strip{
+  position:relative;z-index:1;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  border-bottom:1px solid var(--ink-border);
+}
+.trust-cell{
+  padding:2.5rem 2rem;
+  border-right:1px solid var(--ink-border);
+  display:flex;flex-direction:column;gap:0.75rem;
+}
+.trust-cell:last-child{border-right:none}
+.trust-icon{font-size:1.4rem;opacity:0.8}
+.trust-label{
+  font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--gold);font-weight:600;font-family:var(--font-ui);
+}
+.trust-desc{
+  font-family:var(--font-serif);
+  font-size:1rem;font-style:italic;
+  color:var(--parchment-dim);
+  line-height:1.5;
+}
 
-/* Engagement letter CTA */
+/* CONTENT */
+.content{
+  position:relative;z-index:1;
+  max-width:860px;margin:0 auto;
+  padding:0 3rem 8rem;
+}
+
+/* SECTION */
+.sec{
+  padding:5rem 0;
+  border-bottom:1px solid var(--ink-border);
+}
+.sec:last-of-type{border-bottom:none}
+
+.sec-num{
+  display:inline-block;
+  font-family:var(--font-mono);
+  font-size:0.7rem;
+  color:var(--gold);
+  border:1px solid var(--gold-dim);
+  background:var(--gold-glow);
+  padding:0.2rem 0.5rem;
+  border-radius:2px;
+  margin-bottom:1.25rem;
+  letter-spacing:0.08em;
+}
+.sec h2{
+  font-family:var(--font-serif);
+  font-size:clamp(2rem,4vw,3rem);
+  font-weight:400;
+  color:var(--white);
+  line-height:1.1;
+  margin-bottom:1.5rem;
+}
+.sec h2 em{color:var(--gold);font-style:italic}
+.sec-divider{width:100%;height:1px;background:var(--ink-border);margin-bottom:2rem}
+
+.sec p{
+  font-family:var(--font-serif);
+  font-size:1.15rem;
+  color:var(--parchment-dim);
+  line-height:1.85;
+  margin-bottom:1.25rem;
+}
+.sec p:last-child{margin-bottom:0}
+
+/* BLOCKQUOTE */
+.blockquote{
+  border-left:2px solid var(--gold);
+  padding:1.25rem 1.75rem;
+  margin:2rem 0;
+  background:linear-gradient(90deg,var(--gold-glow),transparent);
+}
+.blockquote p{
+  font-family:var(--font-serif);
+  font-size:1.2rem;
+  font-style:italic;
+  color:var(--parchment);
+  line-height:1.75;
+  margin:0;
+}
+
+/* CHECK LIST */
+.check-list{
+  margin:2rem 0;
+  border:1px solid var(--ink-border);
+  border-radius:2px;
+  overflow:hidden;
+}
+.check-item{
+  display:flex;align-items:flex-start;gap:1.25rem;
+  padding:1.25rem 1.5rem;
+  border-bottom:1px solid var(--ink-border);
+}
+.check-item:last-child{border-bottom:none}
+.check-icon{
+  width:26px;height:26px;border-radius:50%;
+  background:var(--gold-glow);border:1px solid var(--gold-dim);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:0.1rem;
+  color:var(--gold);font-size:0.8rem;
+}
+.check-text{
+  font-family:var(--font-serif);
+  font-size:1.05rem;
+  color:var(--parchment-dim);
+  line-height:1.7;
+}
+.check-text strong{color:var(--white);font-weight:600}
+
+/* X LIST */
+.x-list{
+  margin:2rem 0;
+  border:1px solid var(--ink-border);
+  border-radius:2px;
+  overflow:hidden;
+}
+.x-item{
+  display:flex;align-items:center;gap:1.25rem;
+  padding:1.1rem 1.5rem;
+  border-bottom:1px solid var(--ink-border);
+}
+.x-item:last-child{border-bottom:none}
+.x-icon{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--red-dim);border:1px solid rgba(192,84,74,0.3);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;color:var(--red);font-size:0.7rem;font-weight:700;
+}
+.x-text{
+  font-family:var(--font-serif);
+  font-size:1.05rem;
+  color:var(--parchment-dim);
+  line-height:1.6;
+}
+
+/* ANTHROPIC CALLOUT */
+.anthropic-callout{
+  margin:2rem 0;
+  padding:1.75rem 2rem;
+  border:1px solid var(--ink-border);
+  border-left:3px solid var(--gold);
+  background:var(--ink-mid);
+  border-radius:2px;
+}
+.anthropic-callout .ac-label{
+  font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--gold);font-weight:600;font-family:var(--font-ui);margin-bottom:0.75rem;
+}
+.anthropic-callout p{
+  font-family:var(--font-serif);
+  font-size:1.05rem;
+  color:var(--parchment-dim);
+  line-height:1.75;
+  margin:0;
+}
+.anthropic-callout a{color:var(--gold);text-decoration:underline;text-underline-offset:3px}
+
+/* DATA FLOW TABLE */
+.flow-table{
+  width:100%;border-collapse:collapse;
+  margin:2rem 0;
+  font-family:var(--font-serif);
+}
+.flow-table th{
+  text-align:left;padding:0.75rem 1.25rem;
+  font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--gold);font-family:var(--font-ui);font-weight:600;
+  border-bottom:1px solid var(--ink-border);
+}
+.flow-table td{
+  padding:1.1rem 1.25rem;
+  border-bottom:1px solid var(--ink-border);
+  font-size:1rem;color:var(--parchment-dim);
+  line-height:1.65;vertical-align:top;
+}
+.flow-table td:first-child{
+  color:var(--white);font-weight:600;width:28%;
+  white-space:nowrap;
+}
+.flow-table tr:last-child td{border-bottom:none}
+
+/* CTA */
 .cta-block{
-  background:var(--ink-mid);border:1px solid var(--ink-border);
-  border-radius:12px;padding:32px;margin-top:48px;
+  margin-top:5rem;
+  padding:3rem;
+  border:1px solid var(--ink-border);
+  background:var(--ink-mid);
+  border-radius:2px;
 }
-.cta-block h3{font-family:var(--font-serif);font-size:22px;color:#fff;margin-bottom:8px}
-.cta-block p{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:24px}
-.cta-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.btn-gold{
-  display:inline-block;background:var(--gold);color:#0a0f1e;
-  padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;
+.cta-block h3{
+  font-family:var(--font-serif);
+  font-size:2rem;font-weight:400;
+  color:var(--white);margin-bottom:0.75rem;
 }
-.btn-outline{
-  display:inline-block;border:1px solid var(--ink-border);color:var(--muted);
-  padding:12px 24px;border-radius:8px;font-size:14px;
+.cta-block h3 em{color:var(--gold);font-style:italic}
+.cta-block p{
+  font-family:var(--font-serif);
+  font-size:1.05rem;color:var(--parchment-dim);
+  line-height:1.75;margin-bottom:2rem;
 }
-.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.cta-buttons{display:flex;gap:1rem;flex-wrap:wrap}
+.btn-primary{
+  display:inline-block;
+  background:var(--gold);color:var(--ink);
+  padding:0.85rem 2rem;
+  font-family:var(--font-ui);font-size:0.8rem;font-weight:700;
+  letter-spacing:0.08em;text-transform:uppercase;
+  border-radius:2px;transition:background .2s;
+}
+.btn-primary:hover{background:var(--gold-light)}
+.btn-secondary{
+  display:inline-block;
+  border:1px solid var(--ink-border);color:var(--muted);
+  padding:0.85rem 2rem;
+  font-family:var(--font-ui);font-size:0.8rem;
+  letter-spacing:0.08em;text-transform:uppercase;
+  border-radius:2px;transition:border-color .2s,color .2s;
+}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold)}
 
+/* FOOTER */
 footer{
-  border-top:1px solid var(--ink-border);padding:24px 32px;
-  text-align:center;color:var(--dimmer);font-size:13px;
+  position:relative;z-index:1;
+  border-top:1px solid var(--ink-border);
+  padding:2rem 3rem;
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:0.8rem;color:var(--muted);
 }
-footer a{color:var(--muted)}footer a:hover{color:var(--gold)}
+footer a:hover{color:var(--gold)}
 
-@media(max-width:600px){
-  .commitments{grid-template-columns:1fr}
-  h1{font-size:32px}
-  main{padding:48px 20px 80px}
-  nav{padding:16px 20px}
+@media(max-width:700px){
+  nav{padding:1rem 1.25rem}
+  .hero{padding:8rem 1.25rem 4rem}
+  .trust-strip{grid-template-columns:1fr 1fr}
+  .trust-cell{border-right:none;border-bottom:1px solid var(--ink-border)}
+  .content{padding:0 1.25rem 5rem}
+  .sec{padding:3rem 0}
+  footer{flex-direction:column;gap:1rem;text-align:center}
 }
 </style>
 </head>
 <body>
 
+<!-- NAV -->
 <nav>
-  <div class="brand">Themis<span>OS</span></div>
-  <a href="index.html" class="back">← Back to home</a>
+  <div class="nav-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold)">
+      <path d="M12 3v18M5 8l7-5 7 5M3 10l4 8h10l4-8"/>
+    </svg>
+    THEMISOS
+  </div>
+  <a href="index.html" class="nav-back">← Back to Home</a>
 </nav>
 
-<main>
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-rule"><span>ThemisOS — Trust &amp; Security</span></div>
+  <h1>Data Handling<br>&amp; <em>Privilege</em></h1>
+  <div class="hero-divider"></div>
+  <p>What we do with your documents, how we protect attorney-client privilege, and the commitments we make to every attorney we work with.</p>
+</section>
 
-  <p class="page-kicker">Security &amp; Data Handling</p>
-  <h1>Your client's documents<br>stay yours.</h1>
-  <p class="page-intro">
-    ThemisOS is built for plaintiff attorneys. We understand that the documents you upload carry privilege, confidentiality obligations, and real consequences. This page explains exactly how your data is handled — no vague assurances.
-  </p>
+<!-- TRUST STRIP -->
+<div class="trust-strip">
+  <div class="trust-cell">
+    <div class="trust-icon">🔒</div>
+    <div class="trust-label">No Data Retention</div>
+    <div class="trust-desc">Documents are not stored after your session ends</div>
+  </div>
+  <div class="trust-cell">
+    <div class="trust-icon">⚖️</div>
+    <div class="trust-label">Privilege Protected</div>
+    <div class="trust-desc">Attorney-client privilege built into every workflow</div>
+  </div>
+  <div class="trust-cell">
+    <div class="trust-icon">🚫</div>
+    <div class="trust-label">No Model Training</div>
+    <div class="trust-desc">Your files never train any AI model — ours or third-party</div>
+  </div>
+  <div class="trust-cell">
+    <div class="trust-icon">✦</div>
+    <div class="trust-label">No Third-Party Sharing</div>
+    <div class="trust-desc">We do not sell, license, or share your data — ever</div>
+  </div>
+</div>
 
-  <!-- Four commitments -->
-  <div class="commitments">
-    <div class="commit-card">
-      <div class="commit-icon">🗑️</div>
-      <div class="commit-title">Zero data retention</div>
-      <div class="commit-desc">Uploaded documents are processed in memory and never stored on our servers. Nothing persists after your session ends.</div>
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- SECTION 01 -->
+  <div class="sec">
+    <div class="sec-num">01</div>
+    <h2>Your documents are <em>yours.</em><br>Full stop.</h2>
+    <div class="sec-divider"></div>
+    <p>When you upload policy documents, complaints, correspondence, or any other materials to ThemisOS, those files exist for one purpose only: completing the analysis you asked for. They are not indexed, catalogued, stored in a database, or reviewed by anyone other than the team you've authorized to work on your matter.</p>
+    <div class="blockquote">
+      <p>We built ThemisOS for plaintiff attorneys. We understand that the documents you upload may be the most sensitive materials in an active case. We treat them accordingly.</p>
     </div>
-    <div class="commit-card">
-      <div class="commit-icon">⚖️</div>
-      <div class="commit-title">Privilege protected</div>
-      <div class="commit-desc">We treat every document as attorney work product. ThemisOS does not review, log, or retain the content of your uploads.</div>
-    </div>
-    <div class="commit-card">
-      <div class="commit-icon">🚫</div>
-      <div class="commit-title">Never used for training</div>
-      <div class="commit-desc">Your documents and outputs are not used to train any AI model — ours or anyone else's. We have no interest in your client data beyond processing your request.</div>
-    </div>
-    <div class="commit-card">
-      <div class="commit-icon">🔒</div>
-      <div class="commit-title">No third-party sharing</div>
-      <div class="commit-desc">Your data is not sold, shared, or disclosed to any third party. The only external service in the pipeline is the Anthropic API, governed by enterprise-grade terms.</div>
+    <div class="check-list">
+      <div class="check-item">
+        <div class="check-icon">✓</div>
+        <div class="check-text"><strong>Session-scoped processing.</strong> Documents are processed in isolated environments tied to your active session. When the session closes, document content is not retained.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon">✓</div>
+        <div class="check-text"><strong>No long-term storage by default.</strong> Unless you and ThemisOS have separately agreed in writing to retain materials for a multi-session engagement, files are not stored beyond the active session.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon">✓</div>
+        <div class="check-text"><strong>Encrypted in transit.</strong> All document uploads and data transmission occur over TLS-encrypted connections. Your files are never transmitted in plain text.</div>
+      </div>
     </div>
   </div>
 
-  <!-- How it works -->
-  <div class="section">
-    <div class="section-title">How your data moves</div>
-    <p>When you upload a document, here is the exact sequence:</p>
-    <table class="data-table">
+  <!-- SECTION 02 -->
+  <div class="sec">
+    <div class="sec-num">02</div>
+    <h2>We never use your documents<br>to <em>train AI models.</em></h2>
+    <div class="sec-divider"></div>
+    <p>This is non-negotiable and applies without exception. The materials you share with ThemisOS — policy documents, litigation filings, demand letters, adjuster correspondence, or anything else — are never used to improve, fine-tune, or train any AI model, whether that's our own systems or any third-party model provider we work with.</p>
+    <div class="check-list">
+      <div class="check-item">
+        <div class="check-icon">✓</div>
+        <div class="check-text"><strong>Zero-training guarantee.</strong> Your document content is used solely to produce the output you requested. It is not fed back into any training pipeline.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon">✓</div>
+        <div class="check-text"><strong>Applies to all model providers.</strong> Where ThemisOS uses third-party AI infrastructure, we use APIs with contractual data processing agreements that prohibit training on customer data.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon">✓</div>
+        <div class="check-text"><strong>No behavioral profiling.</strong> We do not analyze your query patterns, matter types, or usage behavior for any commercial purpose.</div>
+      </div>
+    </div>
+    <div class="blockquote">
+      <p>The carrier on the other side of your case does not get smarter because you used ThemisOS. Your documents work for you — not for anyone else.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 03 -->
+  <div class="sec">
+    <div class="sec-num">03</div>
+    <h2>Powered by Anthropic —<br><em>enterprise-grade</em> infrastructure.</h2>
+    <div class="sec-divider"></div>
+    <p>ThemisOS runs on Anthropic's Claude API — one of the most rigorously safety-focused AI systems available. This means your documents benefit from two independent layers of protection: ThemisOS's own zero-retention architecture, and Anthropic's contractual commitment not to train on API data.</p>
+    <div class="anthropic-callout">
+      <div class="ac-label">Anthropic API Data Policy</div>
+      <p>Under Anthropic's standard API terms, data submitted through the API is not used to train or improve Anthropic's models. Anthropic maintains enterprise-grade infrastructure with encryption in transit and at rest. You can review their policy directly at <a href="https://www.anthropic.com/legal/privacy" target="_blank">anthropic.com/legal/privacy →</a></p>
+    </div>
+    <p>This two-layer structure — our architecture plus Anthropic's contractual guarantees — provides stronger protection than most general-purpose legal research tools currently on the market. Unlike consumer AI products, API usage is governed by explicit data processing terms, not general privacy policies written for mass audiences.</p>
+
+    <p style="font-family:var(--font-ui);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin:2rem 0 0.75rem;">How your data moves</p>
+    <table class="flow-table">
       <thead>
         <tr><th>Step</th><th>What happens</th></tr>
       </thead>
       <tbody>
-        <tr><td>Upload</td><td>Your PDF is transmitted over encrypted HTTPS directly to our processing backend. It is never written to disk.</td></tr>
+        <tr><td>Upload</td><td>Your PDF is transmitted over encrypted HTTPS to our processing backend. It is never written to disk.</td></tr>
         <tr><td>Extraction</td><td>Text is extracted from the document in memory using our pipeline, then sent to the Anthropic API for analysis.</td></tr>
-        <tr><td>Analysis</td><td>Anthropic's Claude model processes the text and returns results. Under Anthropic's API terms, your data is not used for model training.</td></tr>
+        <tr><td>Analysis</td><td>Anthropic's Claude model processes the text and returns results. Your data is not used for model training under Anthropic's API terms.</td></tr>
         <tr><td>Delivery</td><td>Results are returned to your browser session. No copy is retained on our end.</td></tr>
         <tr><td>Session end</td><td>All in-memory data is cleared. Nothing is logged, cached, or recoverable after you close the session.</td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- Anthropic posture -->
-  <div class="section">
-    <div class="section-title">Powered by Anthropic's API</div>
-    <p>
-      ThemisOS uses Anthropic's Claude API as its AI backbone. Anthropic is one of the most rigorously safety-focused AI companies operating today, and their API terms provide strong contractual data protections.
-    </p>
-    <div class="anthropic-block">
-      <div class="ab-label">Anthropic API Data Policy</div>
-      <p>
-        Under Anthropic's standard API usage policy, data submitted via the API is not used to train or improve Anthropic's models. Anthropic maintains enterprise-grade infrastructure with encryption in transit and at rest. You can review their policy directly at <a href="https://www.anthropic.com/legal/privacy" target="_blank">anthropic.com/legal/privacy</a>.
-      </p>
+  <!-- SECTION 04 -->
+  <div class="sec">
+    <div class="sec-num">04</div>
+    <h2>What we <em>never</em> do.</h2>
+    <div class="sec-divider"></div>
+    <p>Some commitments are best stated plainly. Here is an explicit list of things ThemisOS does not do — not as a matter of policy preference, but as a hard constraint on how this platform operates.</p>
+    <div class="x-list">
+      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Sell, rent, license, or transfer your data or document contents to any third party</div></div>
+      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Use your documents to train, fine-tune, or benchmark any AI model</div></div>
+      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Retain document content after a session ends without explicit written agreement</div></div>
+      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Reference, summarize, or disclose your matter in any public or marketing context</div></div>
+      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Contact your clients or opposing parties for any reason</div></div>
+      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Use tracking pixels, analytics scripts, or cookies on this website</div></div>
+      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Provide your contact information to any sales list or third-party service</div></div>
     </div>
-    <p>
-      This means your documents benefit from two layers of protection: ThemisOS's own zero-retention architecture, and Anthropic's contractual commitment not to train on API data. The two together are more protective than most general-purpose legal research tools currently on the market.
-    </p>
   </div>
 
-  <!-- What we do collect -->
-  <div class="section">
-    <div class="section-title">What we do collect</div>
-    <p>We believe in being specific. Here is the limited information ThemisOS collects:</p>
-    <table class="data-table">
-      <thead>
-        <tr><th>Data</th><th>Why</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Email address</td><td>Used solely for account access and support communication. Never shared.</td></tr>
-        <tr><td>Firm name</td><td>Used to associate your account with your organization. Not disclosed externally.</td></tr>
-        <tr><td>Usage metadata</td><td>Anonymous counts of sessions and queries, used only to improve the platform. No document content is included.</td></tr>
-      </tbody>
-    </table>
-    <p>We do not run analytics that track document content, use cookies for advertising, or share any information with data brokers.</p>
+  <!-- SECTION 05 -->
+  <div class="sec">
+    <div class="sec-num">05</div>
+    <h2>Request a written<br><em>data handling agreement.</em></h2>
+    <div class="sec-divider"></div>
+    <p>If your firm requires a formal data handling or confidentiality agreement before use, we'll provide one. Most clients receive a signed engagement letter within one business day. The letter covers data processing scope, deletion commitments, privilege protections, and ThemisOS's obligations as a service provider to your firm.</p>
+    <div class="blockquote">
+      <p>We welcome written agreements. They protect you, and they hold us to the standard we already operate by.</p>
+    </div>
+    <p>To request an agreement or ask any questions about our data practices, email us directly at <a href="mailto:beckett@themisos.ai" style="color:var(--gold);text-decoration:underline;text-underline-offset:3px">beckett@themisos.ai</a>. No forms, no sales process — just a direct conversation.</p>
   </div>
 
-  <!-- Written agreement CTA -->
+  <!-- CTA -->
   <div class="cta-block">
-    <h3>Request a written data handling agreement</h3>
-    <p>
-      If your firm requires a formal data handling or confidentiality agreement before use — or if you'd like our engagement letter spelling out these commitments in plain terms — we'll provide one. Most clients receive it within one business day.
-    </p>
-    <div class="cta-row">
-      <a href="mailto:beckett@themisos.ai?subject=Data Handling Agreement Request" class="btn-gold">Request Agreement</a>
-      <a href="mailto:beckett@themisos.ai" class="btn-outline">Ask a question</a>
+    <h3>Questions about<br><em>data handling?</em></h3>
+    <p>Reach out directly. We'll respond within one business day and can provide a written agreement, answer specific questions about our infrastructure, or walk through how the platform handles your firm's documents.</p>
+    <div class="cta-buttons">
+      <a href="mailto:beckett@themisos.ai?subject=Data Handling Agreement Request" class="btn-primary">Request Agreement</a>
+      <a href="mailto:beckett@themisos.ai" class="btn-secondary">Ask a Question</a>
+      <a href="index.html" class="btn-secondary">Back to Home</a>
     </div>
   </div>
 
-</main>
+</div>
 
+<!-- FOOTER -->
 <footer>
-  <p>© 2025 ThemisOS &nbsp;·&nbsp; <a href="index.html">Home</a> &nbsp;·&nbsp; <a href="mailto:beckett@themisos.ai">beckett@themisos.ai</a></p>
+  <span>© 2025 ThemisOS — All rights reserved</span>
+  <span><a href="index.html">Home</a> &nbsp;·&nbsp; <a href="mailto:beckett@themisos.ai">beckett@themisos.ai</a></span>
 </footer>
 
 </body>
