@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 
@@ -33,6 +33,8 @@ export default function CasePage() {
   const [caseFile, setCaseFile] = useState<File | null>(null)
   const [context, setContext] = useState("")
   const [analyzing, setAnalyzing] = useState(false)
+  const [statusMsg, setStatusMsg] = useState("")
+  const statusInterval = useRef<any>(null)
   const [results, setResults] = useState<any>(null)
   const [error, setError] = useState("")
   const [activeTab, setActiveTab] = useState("findings")
@@ -59,6 +61,22 @@ export default function CasePage() {
     setAnalyzing(true)
     setError("")
     setResults(null)
+    const stages = [
+      "Reading policy document...",
+      "Parsing coverage terms and limits...",
+      "Cross-referencing case file...",
+      "Identifying exclusions and conflicts...",
+      "Calculating recovery opportunities...",
+      "Building attorney flags...",
+      "Compiling findings...",
+      "Finalizing analysis...",
+    ]
+    let i = 0
+    setStatusMsg(stages[0])
+    statusInterval.current = setInterval(() => {
+      i = Math.min(i + 1, stages.length - 1)
+      setStatusMsg(stages[i])
+    }, 6000)
     try {
       const fd = new FormData()
       fd.append("policy", policyFile)
@@ -92,6 +110,8 @@ export default function CasePage() {
     } catch (e: any) {
       setError("Backend unreachable: " + e.message)
     }
+    clearInterval(statusInterval.current)
+    setStatusMsg("")
     setAnalyzing(false)
   }
 
@@ -115,6 +135,9 @@ export default function CasePage() {
         }
         @media screen {
           .print-report { display: none !important; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
 
@@ -325,7 +348,12 @@ export default function CasePage() {
           {error && <div style={{ background: "rgba(255,90,90,0.1)", border: "1px solid #ff5a5a", borderRadius: "10px", padding: "16px 20px", marginBottom: "24px", fontSize: "13px", color: "#ff5a5a", fontFamily: "-apple-system, sans-serif" }}>{error}</div>}
 
           <button onClick={runAnalysis} disabled={!policyFile || !caseFile || analyzing} style={{ width: "100%", padding: "14px", background: "#4f7cff", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, fontFamily: "SF Mono, monospace", cursor: (!policyFile || !caseFile || analyzing) ? "not-allowed" : "pointer", opacity: (!policyFile || !caseFile || analyzing) ? 0.35 : 1, transition: "opacity 0.2s", letterSpacing: "0.02em", marginBottom: "32px" }}>
-            {analyzing ? "⚡ Analyzing… (large docs may take 30-60s)" : "⚡ Run Cross-Examination"}
+            {analyzing ? (
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+              <span style={{ display: "inline-block", width: "14px", height: "14px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              {statusMsg}
+            </span>
+          ) : "⚡ Run Cross-Examination"}
           </button>
 
           {results && (
