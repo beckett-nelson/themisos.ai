@@ -358,7 +358,7 @@ async def invite_client(req: InviteRequest):
     payload = {
         "email": req.email,
         "data": {"firm_name": req.firm_name},
-        "redirect_to": "https://platform.themisos.ai/login"
+        "redirect_to": "https://platform.themisos.ai/auth/confim"
     }
 
     async with httpx.AsyncClient() as client:
