@@ -16,33 +16,55 @@ export default function ConfirmPage() {
 
   useEffect(() => {
     const handleToken = async () => {
+      // Check hash fragment first (#access_token=...)
       const hash = window.location.hash
+      const search = window.location.search
+
+      let accessToken: string | null = null
+      let refreshToken: string | null = null
 
       if (hash && hash.includes('access_token')) {
         const params = new URLSearchParams(hash.substring(1))
-        const accessToken = params.get('access_token')
-        const refreshToken = params.get('refresh_token')
+        accessToken = params.get('access_token')
+        refreshToken = params.get('refresh_token')
+      } else if (search) {
+        // Also check query string (?access_token=...)
+        const params = new URLSearchParams(search)
+        accessToken = params.get('access_token')
+        refreshToken = params.get('refresh_token')
+      }
 
-        if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          })
-          if (!error) {
-            setReady(true)
-          } else {
-            setError('Invalid or expired invite link. Please request a new invite.')
-          }
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        })
+        if (!error) {
+          setReady(true)
         } else {
-          setError('Invalid invite link. Please use the link from your invitation email.')
+          setError('Invalid or expired invite link. Please request a new invite.')
         }
       } else {
-        // No hash — check for existing session
+        // No token in URL — check for existing session
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           setReady(true)
         } else {
-          setError('No invite token found. Please use the link from your invitation email.')
+          // Last resort: listen for auth state change
+          const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session) {
+              setReady(true)
+              setChecking(false)
+              subscription.unsubscribe()
+            }
+          })
+          // Give it 3 seconds then show error
+          setTimeout(() => {
+            setChecking(false)
+            setError('No invite token found. Please use the link from your invitation email.')
+            subscription.unsubscribe()
+          }, 3000)
+          return
         }
       }
       setChecking(false)
