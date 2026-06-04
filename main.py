@@ -2,7 +2,9 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 import tempfile, os, anthropic, json, time, random
+import httpx
 from io import BytesIO
 
 app = FastAPI()
@@ -331,9 +333,57 @@ async def cross_examine(
         return JSONResponse(status_code=500, content={"error": str(e), "type": type(e).__name__})
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Invite endpoint
+# ─────────────────────────────────────────────────────────────────────────────
+
+class InviteRequest(BaseModel):
+    email: str
+    firm_name: str
+
+@app.post("/invite")
+async def invite_client(req: InviteRequest):
+    supabase_url = os.environ.get("SUPABASE_URL")
+    service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+
+    if not supabase_url or not service_role_key:
+        return JSONResponse(status_code=500, content={"error": "Supabase credentials not configured."})
+
+    headers = {
+        "apikey": service_role_key,
+        "Authorization": f"Bearer {service_role_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "email": req.email,
+        "data": {"firm_name": req.firm_name},
+        "redirect_to": "https://platform.themisos.ai/login"
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{supabase_url}/auth/v1/invite",
+            headers=headers,
+            json=payload
+        )
+
+    if response.status_code == 200:
+        return JSONResponse(content={"success": True, "message": f"Invite sent to {req.email}"})
+    else:
+        return JSONResponse(
+            status_code=response.status_code,
+            content={"error": response.json()}
+        )
+
+
 @app.get("/health")
 async def health():
-    return {"status": "ok", "api_key_set": bool(os.environ.get("ANTHROPIC_API_KEY"))}
+    return {
+        "status": "ok",
+        "api_key_set": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "supabase_configured": bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_ROLE_KEY"))
+    }
 
 
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
