@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 const ADMIN_EMAIL = 'beckett@themisos.ai'
 
 // Routes that don't require auth
-const PUBLIC_ROUTES = ['/login']
+const PUBLIC_ROUTES = ['/login', '/auth/confirm']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl

@@ -10,17 +10,45 @@ export default function ConfirmPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [ready, setReady] = useState(false)
+  const [checking, setChecking] = useState(true)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    // Supabase puts the token in the URL hash — this exchanges it for a session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        setReady(true)
+    const handleToken = async () => {
+      const hash = window.location.hash
+
+      if (hash && hash.includes('access_token')) {
+        const params = new URLSearchParams(hash.substring(1))
+        const accessToken = params.get('access_token')
+        const refreshToken = params.get('refresh_token')
+
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+          if (!error) {
+            setReady(true)
+          } else {
+            setError('Invalid or expired invite link. Please request a new invite.')
+          }
+        } else {
+          setError('Invalid invite link. Please use the link from your invitation email.')
+        }
+      } else {
+        // No hash — check for existing session
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          setReady(true)
+        } else {
+          setError('No invite token found. Please use the link from your invitation email.')
+        }
       }
-    })
-    return () => subscription.unsubscribe()
+      setChecking(false)
+    }
+
+    handleToken()
   }, [])
 
   const handleSetPassword = async () => {
@@ -55,14 +83,19 @@ export default function ConfirmPage() {
         </div>
 
         <div style={{ background: '#0A1220', border: '1px solid #1A2E4A', borderRadius: '4px', padding: '32px' }}>
-          {!ready ? (
+          {checking ? (
             <div style={{ textAlign: 'center' }}>
               <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#9A927E', fontSize: '15px', marginBottom: '8px' }}>
                 Verifying your invite link...
               </p>
               <p style={{ fontSize: '13px', color: '#6E7D94' }}>This will only take a moment.</p>
             </div>
-          ) : (
+          ) : error && !ready ? (
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ color: '#ff5a5a', fontSize: '14px', fontFamily: 'monospace', marginBottom: '20px', lineHeight: 1.6 }}>{error}</p>
+              <a href="/login" style={{ color: '#C9962B', fontSize: '13px', textDecoration: 'underline' }}>Back to login</a>
+            </div>
+          ) : ready ? (
             <>
               <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#ffffff', marginBottom: '6px' }}>Set your password</h2>
               <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#9A927E', fontSize: '14px', marginBottom: '28px' }}>
@@ -112,7 +145,7 @@ export default function ConfirmPage() {
                 {loading ? 'Setting password...' : 'Set Password & Enter Platform →'}
               </button>
             </>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
