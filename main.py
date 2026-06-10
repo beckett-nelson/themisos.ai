@@ -354,7 +354,7 @@ def run_cross_examine(policy_text: str, case_text: str, context: str, client) ->
         raw = call_with_retry(
             client,
             model="claude-sonnet-4-5",
-            max_tokens=8192,
+            max_tokens=16000,
             system=ANALYSIS_SYSTEM,
             messages=[{"role": "user", "content": build_prompt(policy_text, case_text, context)}]
         )
@@ -393,7 +393,7 @@ def run_cross_examine(policy_text: str, case_text: str, context: str, client) ->
     raw = call_with_retry(
         client,
         model="claude-sonnet-4-5",
-        max_tokens=8192,
+        max_tokens=16000,
         system=MERGE_SYSTEM,
         messages=[{"role": "user", "content": build_merge_prompt(partials, context)}]
     )
