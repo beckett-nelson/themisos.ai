@@ -78,15 +78,22 @@ export default function CasePage() {
       setStatusMsg(stages[i])
     }, 6000)
     try {
+      // Get user info for tracking
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user?.id).single()
+
       const fd = new FormData()
       fd.append("policy", policyFile)
       fd.append("case_file", caseFile)
       fd.append("context", context)
+      fd.append("case_id", caseData?.id || "")
+      fd.append("case_name", caseData?.name || "")
+      fd.append("user_email", user?.email || "")
+      fd.append("firm_name", profile?.full_name || "")
       const resp = await fetch("/api/cross-examine", { method: "POST", body: fd })
       const data = await resp.json()
       if (!resp.ok || data.error) { setError(data.error || "Analysis failed"); setAnalyzing(false); return }
       setResults(data)
-      // Parse total recovery from opportunities
       const parseExposure = (raw: string | number): number => {
         if (!raw) return 0
         if (typeof raw === "number") return Math.round(raw)
@@ -125,7 +132,6 @@ export default function CasePage() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#0d0f12", color: "#e8ecf4", fontFamily: "SF Mono, Fira Code, Cascadia Code, monospace", fontSize: "14px" }}>
 
-      {/* ── PRINT STYLES (injected into head at runtime) ── */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -136,22 +142,14 @@ export default function CasePage() {
         @media screen {
           .print-report { display: none !important; }
         }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      {/* ══════════════════════════════════════════
-          PRINT-ONLY REPORT — hidden on screen
-      ══════════════════════════════════════════ */}
       {results && (
         <div className="print-report" style={{ fontFamily: "Georgia, serif", color: "#111", padding: "0", background: "#fff" }}>
-          {/* Header */}
           <div style={{ borderBottom: "2px solid #0d0f12", paddingBottom: "16px", marginBottom: "28px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
-              <div style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.02em" }}>
-                Themis<span style={{ color: "#C9962B" }}>OS</span>
-              </div>
+              <div style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.02em" }}>Themis<span style={{ color: "#C9962B" }}>OS</span></div>
               <div style={{ fontSize: "11px", color: "#666", marginTop: "3px", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "Arial, sans-serif" }}>Cross-Examination Analysis Report</div>
             </div>
             <div style={{ textAlign: "right", fontSize: "12px", color: "#555", fontFamily: "Arial, sans-serif", lineHeight: 1.6 }}>
@@ -160,15 +158,11 @@ export default function CasePage() {
               <div>{new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
             </div>
           </div>
-
-          {/* Verdict */}
           <div style={{ marginBottom: "24px", padding: "16px 20px", border: "1px solid #ddd", borderRadius: "6px", borderLeft: "4px solid " + verdictColor }}>
             <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#888", fontFamily: "Arial, sans-serif", marginBottom: "6px" }}>Overall Verdict</div>
             <div style={{ fontSize: "18px", fontWeight: 700, color: verdictColor, marginBottom: "8px" }}>{verdictLabel}</div>
             <div style={{ fontSize: "13px", color: "#444", lineHeight: 1.7, fontFamily: "Arial, sans-serif" }}>{results.summary}</div>
           </div>
-
-          {/* Recovery Opportunities */}
           {results.recovery_opportunities?.length > 0 && (
             <div style={{ marginBottom: "24px", pageBreakInside: "avoid" }}>
               <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#C9962B", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", paddingBottom: "6px", borderBottom: "1px solid #eee" }}>Recovery Opportunities</div>
@@ -183,8 +177,6 @@ export default function CasePage() {
               ))}
             </div>
           )}
-
-          {/* Attorney Flags */}
           {results.attorney_flags?.length > 0 && (
             <div style={{ marginBottom: "24px", pageBreakInside: "avoid" }}>
               <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#555", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", paddingBottom: "6px", borderBottom: "1px solid #eee" }}>Attorney Flags</div>
@@ -196,8 +188,6 @@ export default function CasePage() {
               ))}
             </div>
           )}
-
-          {/* Key Findings */}
           {results.key_findings?.length > 0 && (
             <div style={{ marginBottom: "24px" }}>
               <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#555", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", paddingBottom: "6px", borderBottom: "1px solid #eee" }}>Key Findings</div>
@@ -210,8 +200,6 @@ export default function CasePage() {
               ))}
             </div>
           )}
-
-          {/* Coverage Map */}
           {results.coverage_items?.length > 0 && (
             <div style={{ marginBottom: "24px", pageBreakInside: "avoid" }}>
               <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#555", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", paddingBottom: "6px", borderBottom: "1px solid #eee" }}>Coverage Map</div>
@@ -227,9 +215,7 @@ export default function CasePage() {
                   {results.coverage_items.map((item: any, i: number) => (
                     <tr key={i} style={{ borderBottom: "1px solid #eee", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
                       <td style={{ padding: "8px 12px", fontWeight: 600, color: "#111" }}>{item.item}</td>
-                      <td style={{ padding: "8px 12px" }}>
-                        <span style={{ padding: "2px 8px", borderRadius: "99px", fontSize: "10px", fontWeight: 700, background: item.status === "covered" ? "#d4f5e9" : item.status === "excluded" ? "#fde8e8" : "#fff3cd", color: item.status === "covered" ? "#166534" : item.status === "excluded" ? "#991b1b" : "#854d0e" }}>{item.status}</span>
-                      </td>
+                      <td style={{ padding: "8px 12px" }}><span style={{ padding: "2px 8px", borderRadius: "99px", fontSize: "10px", fontWeight: 700, background: item.status === "covered" ? "#d4f5e9" : item.status === "excluded" ? "#fde8e8" : "#fff3cd", color: item.status === "covered" ? "#166534" : item.status === "excluded" ? "#991b1b" : "#854d0e" }}>{item.status}</span></td>
                       <td style={{ padding: "8px 12px", color: "#444" }}>{item.note}</td>
                       <td style={{ padding: "8px 12px", color: "#3355cc", fontSize: "11px" }}>{item.page_ref}</td>
                     </tr>
@@ -238,8 +224,6 @@ export default function CasePage() {
               </table>
             </div>
           )}
-
-          {/* Conflicts */}
           {results.conflicts?.length > 0 && (
             <div style={{ marginBottom: "24px" }}>
               <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#555", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", paddingBottom: "6px", borderBottom: "1px solid #eee" }}>Conflicts & Gaps</div>
@@ -251,25 +235,18 @@ export default function CasePage() {
               ))}
             </div>
           )}
-
-          {/* Recommendation */}
           {results.recommendation && (
             <div style={{ marginBottom: "24px", padding: "14px 18px", background: "#eef2ff", borderRadius: "6px", border: "1px solid #c7d2fe" }}>
               <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#3355cc", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "6px" }}>Recommendation</div>
               <div style={{ fontSize: "13px", color: "#1e1e4a", fontFamily: "Arial, sans-serif", lineHeight: 1.7 }}>{results.recommendation}</div>
             </div>
           )}
-
-          {/* Footer */}
           <div style={{ marginTop: "48px", paddingTop: "12px", borderTop: "1px solid #ddd", fontSize: "10px", color: "#aaa", textAlign: "center", fontFamily: "Arial, sans-serif" }}>
             Generated by ThemisOS · Confidential Attorney Work Product · {new Date().toLocaleDateString()}
           </div>
         </div>
       )}
 
-      {/* ══════════════════════════════════════════
-          SCREEN UI (hidden when printing)
-      ══════════════════════════════════════════ */}
       <div className="no-print">
         <header style={{ padding: "0 32px", borderBottom: "1px solid #2a2f3d", display: "flex", alignItems: "center", backgroundColor: "#151820", position: "sticky", top: 0, zIndex: 100, height: "56px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingRight: "24px", borderRight: "1px solid #2a2f3d", marginRight: "20px", height: "100%" }}>
@@ -296,7 +273,6 @@ export default function CasePage() {
         </header>
 
         <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "36px 32px" }}>
-
           <div style={{ marginBottom: "32px" }}>
             <h2 style={{ fontSize: "20px", fontWeight: 600, color: "#e8ecf4", marginBottom: "6px", letterSpacing: "-0.01em" }}>{caseData.name}</h2>
             {caseData.claimant && <p style={{ color: "#8b92a8", fontSize: "13px", fontFamily: "-apple-system, sans-serif" }}>Claimant: {caseData.claimant}</p>}
@@ -349,11 +325,11 @@ export default function CasePage() {
 
           <button onClick={runAnalysis} disabled={!policyFile || !caseFile || analyzing} style={{ width: "100%", padding: "14px", background: "#4f7cff", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, fontFamily: "SF Mono, monospace", cursor: (!policyFile || !caseFile || analyzing) ? "not-allowed" : "pointer", opacity: (!policyFile || !caseFile || analyzing) ? 0.35 : 1, transition: "opacity 0.2s", letterSpacing: "0.02em", marginBottom: "32px" }}>
             {analyzing ? (
-            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-              <span style={{ display: "inline-block", width: "14px", height: "14px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-              {statusMsg}
-            </span>
-          ) : "⚡ Run Cross-Examination"}
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                <span style={{ display: "inline-block", width: "14px", height: "14px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                {statusMsg}
+              </span>
+            ) : "⚡ Run Cross-Examination"}
           </button>
 
           {results && (
