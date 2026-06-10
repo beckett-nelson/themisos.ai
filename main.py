@@ -44,7 +44,7 @@ def extract_file_text(file_bytes: bytes, filename: str) -> str:
     return file_bytes.decode("utf-8", errors="replace")
 
 
-MAX_CHARS = 60_000
+MAX_CHARS = 250_000
 
 def truncate(text: str, max_chars: int = MAX_CHARS) -> str:
     if len(text) <= max_chars:
@@ -72,16 +72,27 @@ def chunk_text(text: str, max_chars: int = MAX_CHARS) -> list:
 
 def call_with_retry(client, **kwargs) -> str:
     delay = 5
+    retryable = (
+        anthropic.RateLimitError,        # 429 rate limit
+        anthropic.InternalServerError,   # 5xx, including 529 overloaded
+        anthropic.APIConnectionError,    # network blip
+        anthropic.APITimeoutError,       # request timed out
+    )
+    last_err = None
     for attempt in range(5):
         try:
             response = client.messages.create(**kwargs)
             return response.content[0].text
-        except anthropic.RateLimitError:
+        except retryable as e:
+            last_err = e
             if attempt == 4:
                 raise
             jitter = random.uniform(0, delay * 0.3)
             time.sleep(delay + jitter)
             delay = min(delay * 2, 120)
+    if last_err:
+        raise last_err
+    raise RuntimeError("call_with_retry exhausted without a response")
 
 
 def safe_parse(raw: str) -> dict:
@@ -343,7 +354,7 @@ def run_cross_examine(policy_text: str, case_text: str, context: str, client) ->
         raw = call_with_retry(
             client,
             model="claude-sonnet-4-5",
-            max_tokens=4096,
+            max_tokens=8192,
             system=ANALYSIS_SYSTEM,
             messages=[{"role": "user", "content": build_prompt(policy_text, case_text, context)}]
         )
@@ -358,7 +369,7 @@ def run_cross_examine(policy_text: str, case_text: str, context: str, client) ->
         raw = call_with_retry(
             client,
             model="claude-sonnet-4-5",
-            max_tokens=3000,
+            max_tokens=4096,
             system=ANALYSIS_SYSTEM,
             messages=[{"role": "user", "content": build_prompt(policy_chunk, first_case, context, is_partial=True)}]
         )
@@ -372,7 +383,7 @@ def run_cross_examine(policy_text: str, case_text: str, context: str, client) ->
             raw = call_with_retry(
                 client,
                 model="claude-sonnet-4-5",
-                max_tokens=3000,
+                max_tokens=4096,
                 system=ANALYSIS_SYSTEM,
                 messages=[{"role": "user", "content": build_prompt(first_policy, case_chunk, context, is_partial=True)}]
             )
@@ -382,7 +393,7 @@ def run_cross_examine(policy_text: str, case_text: str, context: str, client) ->
     raw = call_with_retry(
         client,
         model="claude-sonnet-4-5",
-        max_tokens=4096,
+        max_tokens=8192,
         system=MERGE_SYSTEM,
         messages=[{"role": "user", "content": build_merge_prompt(partials, context)}]
     )
