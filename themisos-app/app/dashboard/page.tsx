@@ -84,30 +84,56 @@ export default function DashboardPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           {isAdmin && (
-            <a
-              href="/admin/invite"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase',
-                color: '#C9962B', textDecoration: 'none', fontWeight: 600,
-                border: '1px solid rgba(201,150,43,0.3)', borderRadius: '2px',
-                padding: '6px 14px', background: 'rgba(201,150,43,0.06)',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(201,150,43,0.12)'
-                ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,150,43,0.6)'
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(201,150,43,0.06)'
-                ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,150,43,0.3)'
-              }}
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
-              </svg>
-              Invite Client
-            </a>
+            <>
+              <a
+                href="/admin/invite"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase',
+                  color: '#C9962B', textDecoration: 'none', fontWeight: 600,
+                  border: '1px solid rgba(201,150,43,0.3)', borderRadius: '2px',
+                  padding: '6px 14px', background: 'rgba(201,150,43,0.06)',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(201,150,43,0.12)'
+                  ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,150,43,0.6)'
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(201,150,43,0.06)'
+                  ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,150,43,0.3)'
+                }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+                </svg>
+                Invite Client
+              </a>
+              <a
+                href="/admin/clients"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase',
+                  color: '#C9962B', textDecoration: 'none', fontWeight: 600,
+                  border: '1px solid rgba(201,150,43,0.3)', borderRadius: '2px',
+                  padding: '6px 14px', background: 'rgba(201,150,43,0.06)',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(201,150,43,0.12)'
+                  ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,150,43,0.6)'
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(201,150,43,0.06)'
+                  ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,150,43,0.3)'
+                }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Clients
+              </a>
+            </>
           )}
           <span style={{ color: '#6E7D94', fontSize: '13px', letterSpacing: '0.04em' }}>Insurance Recovery Platform</span>
           <button
@@ -172,12 +198,8 @@ export default function DashboardPage() {
         {/* CASES TABLE */}
         <div style={{ background: '#0A1220', border: '1px solid #1A2E4A', overflow: 'hidden', marginBottom: '48px' }}>
           <div style={{ padding: '20px 24px', borderBottom: '1px solid #1A2E4A', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#C9962B', fontFamily: 'monospace', fontWeight: 600 }}>
-              Cases
-            </div>
-            <div style={{ fontSize: '12px', color: '#6E7D94', fontFamily: 'monospace' }}>
-              {loading ? '' : `${cases.length} total`}
-            </div>
+            <div style={{ fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#C9962B', fontFamily: 'monospace', fontWeight: 600 }}>Cases</div>
+            <div style={{ fontSize: '12px', color: '#6E7D94', fontFamily: 'monospace' }}>{loading ? '' : `${cases.length} total`}</div>
           </div>
 
           {loading ? (
