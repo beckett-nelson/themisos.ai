@@ -71,6 +71,7 @@ def chunk_text(text: str, max_chars: int = MAX_CHARS) -> list:
 
 
 def call_with_retry(client, **kwargs) -> str:
+    kwargs.setdefault("temperature", 0)
     delay = 5
     retryable = (
         anthropic.RateLimitError,        # 429 rate limit
@@ -218,6 +219,14 @@ CRITICAL CITATION REQUIREMENT: Every finding, coverage item, and conflict MUST i
 - page_ref: exact page number(s) from [Page N] markers, e.g. "p. 12" or "pp. 4-5"
 - clause: specific section, clause, or exhibit identifier
 
+RECOVERY OPPORTUNITY RULES (critical for consistency and defensibility):
+- Classify every recovery_opportunity as "computed" or "projected".
+- COMPUTED = derived directly from dollar amounts documented in the case file or a coverage calculation. Its estimated_exposure MUST equal that math exactly (e.g. eligible expenses minus deductible, times coinsurance). These are your high-confidence figures.
+- PROJECTED = contingent or future recovery not yet incurred. Bound it CONSERVATIVELY to the actual injuries, treatment, and prognosis described in the case file, using the low defensible end of a reasonable range.
+- NEVER use the remaining policy limit, coverage headroom, or unused aggregate as a recovery figure. Unused limit is not recoverable until expense is actually incurred. Treating headroom as recovery is a critical error.
+- Every estimated_exposure must be traceable to its "basis". If a number cannot be grounded in the documents, do not invent one.
+- confidence: high = directly computed from documents; medium = supported but assumption-dependent; low = speculative.
+
 Always respond with valid JSON only. No prose, no markdown fences."""
 
 
@@ -261,8 +270,10 @@ Return ONLY this JSON schema — no markdown, no commentary:
   ],
   "recovery_opportunities": [
     {{
-      "theory": "legal theory or coverage argument — always populate this if any dollar amount appears in the case file",
-      "estimated_exposure": "exact dollar amount as integer string e.g. 250000 — required, never null, never 0 unless truly zero",
+      "theory": "legal theory or coverage argument supporting this recovery",
+      "recovery_type": "computed | projected",
+      "basis": "what the figure is derived from — cite the specific line items, coverage calculation, or policy provision. Never leave empty.",
+      "estimated_exposure": "integer string. computed: the exact documented/calculated amount (e.g. 1840). projected: a conservative low-end figure bounded by the documented injuries and treatment — NEVER the remaining policy limit or unused coverage.",
       "confidence": "high | medium | low"
     }}
   ],
