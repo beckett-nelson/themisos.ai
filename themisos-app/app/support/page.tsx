@@ -43,7 +43,7 @@ export default function SupportPage() {
               {
                 num: 3,
                 title: "Upload your insurance policy",
-                desc: "Upload the policy document for the case. ThemisOS will analyze it and prepare targeted cross-examination questions and coverage findings.",
+                desc: "Upload the relevant policy document for the case. For best results, use the Declarations Page or Policy Contract — not the full insurance packet. ThemisOS will analyze it and prepare targeted cross-examination questions and coverage findings.",
               },
               {
                 num: 4,
@@ -85,6 +85,21 @@ export default function SupportPage() {
             <p style={{ margin: 0, fontSize: "13px", color: "#9ca3af", fontFamily: "sans-serif", lineHeight: 1.6 }}>
               <span style={{ color: "#c9a84c", fontWeight: 600 }}>Multiple policies?</span>{" "}
               We recommend opening a separate New Case for each insurance policy. This keeps your cross-examinations clean and organized — one case per policy per matter.
+            </p>
+          </div>
+
+          {/* Document tip box */}
+          <div style={{
+            marginTop: "12px",
+            backgroundColor: "#0d1526",
+            border: "1px solid rgba(201,168,76,0.2)",
+            borderLeft: "3px solid #c9a84c",
+            borderRadius: "8px",
+            padding: "14px 16px",
+          }}>
+            <p style={{ margin: 0, fontSize: "13px", color: "#9ca3af", fontFamily: "sans-serif", lineHeight: 1.6 }}>
+              <span style={{ color: "#c9a84c", fontWeight: 600 }}>What to upload?</span>{" "}
+              Use the <span style={{ color: "#ffffff" }}>Declarations Page</span> or <span style={{ color: "#ffffff" }}>Policy Contract</span> from the insurance carrier — not the full insurance packet. These contain the coverage terms, limits, and exclusions ThemisOS needs. Uploading only the relevant documents produces faster, more accurate results.
             </p>
           </div>
         </div>
