@@ -90,7 +90,7 @@ export default function CasePage() {
       fd.append("case_name", caseData?.name || "")
       fd.append("user_email", user?.email || "")
       fd.append("firm_name", profile?.full_name || "")
-      const resp = await fetch("/api/cross-examine", { method: "POST", body: fd })
+      const resp = await fetch("https://app.themisos.ai/cross-examine", { method: "POST", body: fd })
       const data = await resp.json()
       if (!resp.ok || data.error) { setError(data.error || "Analysis failed"); setAnalyzing(false); return }
       setResults(data)
