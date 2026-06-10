@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
@@ -12,7 +12,7 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
 
-
+# v2.1
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
@@ -104,6 +104,94 @@ def safe_parse(raw: str) -> dict:
             "all_exclusions": [], "all_endorsements": [], "coverage_gaps": [],
             "reconciled_limits": {}
         }
+
+
+async def send_notification_email(case_name: str, user_email: str, firm_name: str, analyses_run: int):
+    sendgrid_key = os.environ.get("SENDGRID_API_KEY")
+    if not sendgrid_key:
+        return
+
+    is_first = analyses_run == 1
+    subject = f"{'🎉 First analysis' if is_first else '📊 Analysis run'} — {firm_name or user_email}"
+
+    html = f"""
+    <div style="background:#f4f4f0;padding:32px 20px;font-family:Arial,sans-serif">
+      <div style="max-width:480px;margin:0 auto;background:#0a0f1e;border-radius:8px;overflow:hidden">
+        <div style="background:#05090F;padding:24px 32px;border-bottom:1px solid #1A2E4A;text-align:center">
+          <div style="font-size:20px;font-weight:600;color:#fff;font-family:Georgia,serif">
+            Themis<span style="color:#C9962B">OS</span>
+          </div>
+        </div>
+        <div style="padding:32px">
+          <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#C9962B;margin-bottom:12px">
+            {'First analysis alert' if is_first else 'Analysis notification'}
+          </div>
+          <h2 style="font-size:22px;font-weight:400;color:#fff;margin:0 0 20px;font-family:Georgia,serif">
+            {'A client just ran their <em style="color:#C9962B">first analysis</em>' if is_first else 'A client ran an <em style="color:#C9962B">analysis</em>'}
+          </h2>
+          <div style="background:#111827;border:1px solid #1A2E4A;border-radius:4px;padding:16px 20px;margin-bottom:24px">
+            <table style="width:100%;font-size:13px;font-family:Arial,sans-serif">
+              <tr><td style="color:#6E7D94;padding:4px 0">Client</td><td style="color:#EDE6D0;text-align:right">{user_email}</td></tr>
+              <tr><td style="color:#6E7D94;padding:4px 0">Firm</td><td style="color:#EDE6D0;text-align:right">{firm_name or '—'}</td></tr>
+              <tr><td style="color:#6E7D94;padding:4px 0">Case</td><td style="color:#EDE6D0;text-align:right">{case_name}</td></tr>
+              <tr><td style="color:#6E7D94;padding:4px 0">Total analyses</td><td style="color:#C9962B;text-align:right;font-weight:600">{analyses_run}</td></tr>
+            </table>
+          </div>
+          <div style="text-align:center">
+            <a href="https://platform.themisos.ai/admin/clients" style="display:inline-block;background:#C9962B;color:#05090F;padding:12px 28px;border-radius:2px;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;text-decoration:none">
+              View Client Manager →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+
+    async with httpx.AsyncClient() as client:
+        await client.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            headers={
+                "Authorization": f"Bearer {sendgrid_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "personalizations": [{"to": [{"email": "beckett@themisos.ai"}]}],
+                "from": {"email": "noreply@themisos.ai", "name": "ThemisOS"},
+                "subject": subject,
+                "content": [{"type": "text/html", "value": html}]
+            }
+        )
+
+
+async def track_analysis(case_id: str, case_name: str, user_email: str, firm_name: str):
+    supabase_url = os.environ.get("SUPABASE_URL")
+    service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not service_role_key:
+        return
+
+    headers = {
+        "apikey": service_role_key,
+        "Authorization": f"Bearer {service_role_key}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+    }
+
+    async with httpx.AsyncClient() as client:
+        res = await client.get(
+            f"{supabase_url}/rest/v1/cases?id=eq.{case_id}&select=analyses_run",
+            headers=headers
+        )
+        data = res.json()
+        current = data[0].get("analyses_run", 0) if data else 0
+        new_count = current + 1
+
+        await client.patch(
+            f"{supabase_url}/rest/v1/cases?id=eq.{case_id}",
+            headers=headers,
+            json={"analyses_run": new_count}
+        )
+
+    await send_notification_email(case_name, user_email, firm_name, new_count)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -309,7 +397,11 @@ def run_cross_examine(policy_text: str, case_text: str, context: str, client) ->
 async def cross_examine(
     policy: UploadFile = File(...),
     case_file: UploadFile = File(...),
-    context: str = Form(default="")
+    context: str = Form(default=""),
+    case_id: str = Form(default=""),
+    case_name: str = Form(default="Unknown Case"),
+    user_email: str = Form(default=""),
+    firm_name: str = Form(default=""),
 ):
     try:
         policy_bytes = await policy.read()
@@ -325,12 +417,96 @@ async def cross_examine(
 
         ai_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
         result = run_cross_examine(policy_text, case_text, context.strip(), ai_client)
+
+        if case_id:
+            try:
+                await track_analysis(case_id, case_name, user_email, firm_name)
+            except Exception:
+                pass
+
         return JSONResponse(content=result)
 
     except anthropic.RateLimitError:
         return JSONResponse(status_code=429, content={"error": "Rate limit exceeded. Wait 60 seconds and try again."})
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e), "type": type(e).__name__})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Admin: clients endpoint
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/admin/clients")
+async def get_clients():
+    supabase_url = os.environ.get("SUPABASE_URL")
+    service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+
+    if not supabase_url or not service_role_key:
+        return JSONResponse(status_code=500, content={"error": "Supabase credentials not configured."})
+
+    headers = {
+        "apikey": service_role_key,
+        "Authorization": f"Bearer {service_role_key}",
+        "Content-Type": "application/json"
+    }
+
+    async with httpx.AsyncClient() as client:
+        # Fetch all auth users (includes email + user_metadata with firm_name)
+        users_res = await client.get(
+            f"{supabase_url}/auth/v1/admin/users?per_page=1000",
+            headers=headers
+        )
+        users_data = users_res.json()
+        users = users_data.get("users", [])
+
+        # Fetch all cases with user_id, analyses_run, created_at
+        cases_res = await client.get(
+            f"{supabase_url}/rest/v1/cases?select=user_id,analyses_run,created_at,name",
+            headers=headers
+        )
+        cases = cases_res.json()
+
+    # Build case stats per user
+    user_stats: dict = {}
+    for c in cases:
+        uid = c.get("user_id")
+        if not uid:
+            continue
+        if uid not in user_stats:
+            user_stats[uid] = {"cases": 0, "analyses_run": 0, "last_active": None}
+        user_stats[uid]["cases"] += 1
+        user_stats[uid]["analyses_run"] += (c.get("analyses_run") or 0)
+        created = c.get("created_at")
+        if created and (not user_stats[uid]["last_active"] or created > user_stats[uid]["last_active"]):
+            user_stats[uid]["last_active"] = created
+
+    # Build response — one row per user
+    result = []
+    for u in users:
+        uid = u.get("id")
+        email = u.get("email", "")
+        meta = u.get("user_metadata") or {}
+        raw_meta = u.get("raw_user_meta_data") or {}
+        firm_name = meta.get("firm_name") or raw_meta.get("firm_name") or ""
+        full_name = meta.get("full_name") or raw_meta.get("full_name") or ""
+        joined = u.get("created_at", "")
+        stats = user_stats.get(uid, {"cases": 0, "analyses_run": 0, "last_active": None})
+
+        result.append({
+            "id": uid,
+            "email": email,
+            "firm_name": firm_name,
+            "full_name": full_name,
+            "joined": joined,
+            "cases": stats["cases"],
+            "analyses_run": stats["analyses_run"],
+            "last_active": stats["last_active"],
+        })
+
+    # Sort by analyses_run desc
+    result.sort(key=lambda x: x["analyses_run"], reverse=True)
+
+    return JSONResponse(content={"clients": result})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -382,7 +558,8 @@ async def health():
     return {
         "status": "ok",
         "api_key_set": bool(os.environ.get("ANTHROPIC_API_KEY")),
-        "supabase_configured": bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_ROLE_KEY"))
+        "supabase_configured": bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_ROLE_KEY")),
+        "sendgrid_configured": bool(os.environ.get("SENDGRID_API_KEY"))
     }
 
 
