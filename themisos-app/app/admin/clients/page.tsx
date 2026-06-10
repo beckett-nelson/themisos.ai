@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 type ClientRow = {
   id: string
   email: string
   firm_name: string
-  created_at: string
+  full_name: string
+  joined: string
   cases: number
   analyses_run: number
   last_active: string | null
@@ -17,57 +18,23 @@ type ClientRow = {
 export default function ClientsPage() {
   const [clients, setClients] = useState<ClientRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
     const load = async () => {
-      // Get all users from auth via profiles + cases
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      // Fetch all cases with user_id
-      const { data: cases } = await supabase
-        .from('cases')
-        .select('user_id, analyses_run, created_at')
-
-      // Fetch all profiles
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-
-      // Get auth users via admin — we'll use the anon key to get what we can
-      // Build client map from cases data
-      const userMap: Record<string, { cases: number; analyses_run: number; last_active: string | null }> = {}
-
-      cases?.forEach(c => {
-        if (!c.user_id) return
-        if (!userMap[c.user_id]) {
-          userMap[c.user_id] = { cases: 0, analyses_run: 0, last_active: null }
-        }
-        userMap[c.user_id].cases += 1
-        userMap[c.user_id].analyses_run += (c.analyses_run || 0)
-        if (!userMap[c.user_id].last_active || c.created_at > userMap[c.user_id].last_active!) {
-          userMap[c.user_id].last_active = c.created_at
-        }
-      })
-
-      const profileMap: Record<string, string> = {}
-      profiles?.forEach(p => { profileMap[p.id] = p.full_name || '' })
-
-      const rows: ClientRow[] = Object.entries(userMap).map(([id, stats]) => ({
-        id,
-        email: '—',
-        firm_name: profileMap[id] || '—',
-        created_at: stats.last_active || '',
-        cases: stats.cases,
-        analyses_run: stats.analyses_run,
-        last_active: stats.last_active,
-      }))
-
-      // Sort by analyses_run desc
-      rows.sort((a, b) => b.analyses_run - a.analyses_run)
-      setClients(rows)
+      try {
+        const res = await fetch('https://app.themisos.ai/admin/clients')
+        const data = await res.json()
+        if (data.error) { setError(data.error); setLoading(false); return }
+        setClients(data.clients || [])
+      } catch (e: any) {
+        setError('Could not reach server.')
+      }
       setLoading(false)
     }
     load()
@@ -75,6 +42,10 @@ export default function ClientsPage() {
 
   const totalAnalyses = clients.reduce((s, c) => s + c.analyses_run, 0)
   const totalCases = clients.reduce((s, c) => s + c.cases, 0)
+
+  const fmt = (d: string | null) => d
+    ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : '—'
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#05090F', color: '#EDE6D0', fontFamily: "'Syne', sans-serif" }}>
@@ -86,11 +57,11 @@ export default function ClientsPage() {
         </div>
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
           <a href="/admin/invite" style={{ fontSize: '12px', color: '#6E7D94', textDecoration: 'none', letterSpacing: '0.06em' }}>Invite Client</a>
-          <a href="/dashboard" style={{ fontSize: '12px', color: '#6E7D94', textDecoration: 'none', letterSpacing: '0.06em' }}>Dashboard</a>
+          <a href="/dashboard" style={{ fontSize: '12px', color: '#6E7D94', textDecoration: 'none', letterSpacing: '0.06em' }}>← Dashboard</a>
         </div>
       </nav>
 
-      <main style={{ padding: '52px 32px', maxWidth: '1000px', margin: '0 auto' }}>
+      <main style={{ padding: '52px 32px', maxWidth: '1100px', margin: '0 auto' }}>
 
         {/* HEADER */}
         <div style={{ marginBottom: '40px' }}>
@@ -109,13 +80,13 @@ export default function ClientsPage() {
         {/* STAT CARDS */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: '#1A2E4A', border: '1px solid #1A2E4A', marginBottom: '40px' }}>
           {[
-            { label: 'Total Clients', value: loading ? '—' : clients.length.toString() },
-            { label: 'Total Cases', value: loading ? '—' : totalCases.toString() },
+            { label: 'Total Clients', value: loading ? '—' : clients.length.toString(), gold: false },
+            { label: 'Total Cases', value: loading ? '—' : totalCases.toString(), gold: false },
             { label: 'Total Analyses Run', value: loading ? '—' : totalAnalyses.toString(), gold: true },
           ].map(card => (
             <div key={card.label} style={{ backgroundColor: '#0A1220', padding: '28px 24px' }}>
               <p style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6E7D94', marginBottom: '12px', fontFamily: 'monospace' }}>{card.label}</p>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '2.25rem', fontWeight: 400, color: (card as any).gold ? '#C9962B' : '#ffffff', lineHeight: 1 }}>{card.value}</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '2.25rem', fontWeight: 400, color: card.gold ? '#C9962B' : '#ffffff', lineHeight: 1 }}>{card.value}</p>
             </div>
           ))}
         </div>
@@ -129,16 +100,18 @@ export default function ClientsPage() {
 
           {loading ? (
             <div style={{ padding: '48px', textAlign: 'center', color: '#6E7D94', fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>Loading...</div>
+          ) : error ? (
+            <div style={{ padding: '48px', textAlign: 'center', color: '#ff5a5a', fontFamily: 'monospace', fontSize: '13px' }}>{error}</div>
           ) : clients.length === 0 ? (
             <div style={{ padding: '48px', textAlign: 'center' }}>
-              <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#9A927E' }}>No client activity yet.</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#9A927E' }}>No clients yet.</p>
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #1A2E4A' }}>
-                  {['Firm / Name', 'Cases', 'Analyses Run', 'Last Active'].map(h => (
-                    <th key={h} style={{ padding: '12px 24px', textAlign: 'left', fontSize: '10px', color: '#6E7D94', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'monospace' }}>{h}</th>
+                  {['Email', 'Firm', 'Name', 'Cases', 'Analyses Run', 'Joined', 'Last Active'].map(h => (
+                    <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: '10px', color: '#6E7D94', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -150,24 +123,17 @@ export default function ClientsPage() {
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#05090F')}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
-                    <td style={{ padding: '16px 24px', fontFamily: 'Georgia, serif', fontSize: '14px', color: '#EDE6D0' }}>
-                      {c.firm_name}
-                      <div style={{ fontSize: '11px', color: '#6E7D94', fontFamily: 'monospace', marginTop: '2px' }}>{c.id.slice(0, 8)}...</div>
-                    </td>
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#9A927E', fontFamily: 'monospace' }}>{c.cases}</td>
-                    <td style={{ padding: '16px 24px' }}>
-                      <span style={{
-                        fontSize: '14px',
-                        fontFamily: 'Georgia, serif',
-                        fontWeight: 400,
-                        color: c.analyses_run > 0 ? '#C9962B' : '#6E7D94',
-                      }}>
+                    <td style={{ padding: '14px 20px', fontSize: '13px', color: '#EDE6D0', fontFamily: 'monospace' }}>{c.email || '—'}</td>
+                    <td style={{ padding: '14px 20px', fontSize: '13px', color: '#9A927E', fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>{c.firm_name || '—'}</td>
+                    <td style={{ padding: '14px 20px', fontSize: '13px', color: '#9A927E', fontFamily: 'Georgia, serif' }}>{c.full_name || '—'}</td>
+                    <td style={{ padding: '14px 20px', fontSize: '13px', color: '#9A927E', fontFamily: 'monospace' }}>{c.cases}</td>
+                    <td style={{ padding: '14px 20px' }}>
+                      <span style={{ fontSize: '14px', fontFamily: 'Georgia, serif', color: c.analyses_run > 0 ? '#C9962B' : '#6E7D94', fontWeight: 400 }}>
                         {c.analyses_run}
                       </span>
                     </td>
-                    <td style={{ padding: '16px 24px', fontSize: '12px', color: '#6E7D94', fontFamily: 'monospace' }}>
-                      {c.last_active ? new Date(c.last_active).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
-                    </td>
+                    <td style={{ padding: '14px 20px', fontSize: '12px', color: '#6E7D94', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{fmt(c.joined)}</td>
+                    <td style={{ padding: '14px 20px', fontSize: '12px', color: '#6E7D94', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{fmt(c.last_active)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -176,7 +142,7 @@ export default function ClientsPage() {
         </div>
 
         <p style={{ marginTop: '16px', fontSize: '11px', color: '#6E7D94', fontFamily: 'monospace', letterSpacing: '0.06em' }}>
-          Sorted by analyses run. Only clients with at least one case are shown.
+          Sorted by analyses run.
         </p>
       </main>
     </div>
