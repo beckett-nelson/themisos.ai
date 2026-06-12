@@ -1,9 +1,12 @@
 from fastapi import FastAPI, UploadFile, File, Form, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
+from typing import Optional
 import tempfile, os, anthropic, json, time, random
+import html as html_lib
+from datetime import datetime
 import httpx
 from io import BytesIO
 
@@ -12,7 +15,7 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
 
-# v2.2 — cross-examination AI hardened for tier discipline & defensibility
+# v2.3 — cross-examination + case-examination engines, tier discipline & defensibility
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
@@ -115,6 +118,26 @@ def safe_parse(raw: str) -> dict:
             "attorney_flags": [], "recovery_opportunities": [],
             "all_exclusions": [], "all_endorsements": [], "coverage_gaps": [],
             "reconciled_limits": {}
+        }
+
+
+def safe_parse_examine(raw: str) -> dict:
+    clean = raw.strip()
+    if clean.startswith("```"):
+        start = clean.find("{")
+        end   = clean.rfind("}") + 1
+        if start != -1 and end > 0:
+            clean = clean[start:end]
+    try:
+        return json.loads(clean)
+    except json.JSONDecodeError as e:
+        return {
+            "error": f"JSON parse error: {e}",
+            "case_strength": "contested",
+            "strength_summary": "Examination completed but response could not be parsed.",
+            "raw": raw[:2000],
+            "liable_parties": [], "recovery_opportunities": [], "deadlines": [],
+            "case_gaps": [], "attorney_flags": [], "recommended_next_steps": []
         }
 
 
@@ -423,6 +446,225 @@ Rules:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Prompts — Case Examination (standalone case-merit assessment)
+# ─────────────────────────────────────────────────────────────────────────────
+
+CASE_EXAMINE_SYSTEM = """You are ThemisOS, a senior plaintiff-side trial attorney with deep expertise
+in tort, personal-injury, and insurance-recovery litigation. Unlike the cross-examination engine —
+which compares a known policy against a claim — here you receive a raw case file (police and incident
+reports, medical records, witness statements, demand letters, correspondence) and you assess the
+MATTER ON ITS MERITS the way a seasoned trial lawyer evaluates a new case walking in the door: how
+strong is it, WHO can be held liable, under what theories, what can realistically be recovered, and
+what must be done next.
+
+Your work product is reviewed by practicing attorneys and must withstand adversarial scrutiny. You
+pursue recovery aggressively but never recklessly. Every party you name and every dollar you project
+must be something a competent plaintiff attorney could actually assert and defend. A candid, defensible
+assessment is worth far more than an inflated one that collapses under a motion to dismiss.
+
+────────────────────────────────────────────────────────
+HARD CONSTRAINTS — read first
+────────────────────────────────────────────────────────
+- Assess ONLY what the documents and the optional attorney context support. NEVER fabricate facts,
+  invent defendants, invent injuries, or invent damages figures.
+- NEVER guarantee an outcome, a verdict, a settlement value, or that a party is in fact liable. You
+  identify POTENTIAL liability and arguable theories — you do not adjudicate.
+- Where the record is thin, silent, or ambiguous, SAY SO and label the uncertainty explicitly rather
+  than filling the gap with assumption. Route missing material to case_gaps.
+- Every liable party, recovery figure, deadline, and flag MUST cite the source page using the
+  [Page N] markers (e.g. "p. 12" or "pp. 4-5"). If you cannot cite it, find the cite or omit it.
+
+────────────────────────────────────────────────────────
+1) CASE-STRENGTH RATING (+ plain-English summary)
+────────────────────────────────────────────────────────
+Rate the overall matter on liability clarity, causation, damages support, and collectibility:
+- strong:    clear liability, well-documented damages, defendants with collectible exposure, few
+             obstacles.
+- moderate:  a solid theory with some open questions on liability, causation, or damages.
+- contested: viable but genuinely disputed liability or causation; the outcome turns on facts not yet
+             established.
+- weak:      serious obstacles — thin liability, sparse damages, causation gaps, or limited
+             collectibility.
+Then write a 2-3 sentence plain-English summary a busy attorney can absorb in one read. Be honest —
+an inflated rating misleads counsel and is worse than a candid one.
+
+────────────────────────────────────────────────────────
+2) LIABLE-PARTY EXAMINATION — run this FULL checklist EVERY time, in order
+────────────────────────────────────────────────────────
+For CONSISTENT, complete results across runs, walk the entire checklist below on every analysis. For
+each category ask: does the record contain any non-frivolous basis to implicate a party of this type?
+If yes, name the party (or "Unidentified [type]" when the record implies one but does not name them),
+state the legal theory, the document-based basis, and a confidence level. If no, move on — but ALWAYS
+consider every category so nothing is missed:
+
+  1.  Direct tortfeasor(s) / driver(s) — the individual(s) whose act or omission caused the harm
+      (negligence, gross negligence, recklessness, intentional tort).
+  2.  Employer of a tortfeasor — respondeat superior / vicarious liability for acts in the course and
+      scope of employment; and negligent hiring, training, retention, or supervision as independent
+      theories against the employer.
+  3.  Vehicle owner / lessor — negligent entrustment, owner liability, permissive-use statutes.
+  4.  Property / premises owner, landlord, occupier, or business — premises liability, negligent
+      security, failure to maintain or warn of a dangerous condition.
+  5.  Contractors, subcontractors, and their principals — construction, maintenance, or service
+      negligence; non-delegable duties.
+  6.  Product manufacturers, distributors, retailers — strict product liability, design or
+      manufacturing defect, FAILURE TO WARN (where a product is implicated).
+  7.  Government / municipal entities — dangerous condition of public property, negligent road design,
+      failure to maintain. NOTE the short, jurisdictional tort-claim NOTICE deadlines.
+  8.  Alcohol vendors / social hosts — dram-shop and social-host liability where intoxication appears
+      in the record.
+  9.  Professional service providers — medical, legal, engineering, or other malpractice where a
+      standard-of-care breach appears.
+  10. Parent companies, franchisors, joint venturers — alter ego, apparent agency, joint enterprise
+      where corporate structure or branding is implicated.
+  11. Insurers — first-party (the claimant's own UM/UIM, med-pay, PIP coverages) and third-party
+      liability carriers for each tortfeasor named above.
+
+Multiple parties, and multiple theories per party, are expected in real cases — name every one the
+record supports. Confidence reflects how well the record supports that party's liability:
+high = squarely supported; medium = supported but dependent on a likely-but-unproven fact;
+low = arguable but facing real obstacles or missing facts.
+
+────────────────────────────────────────────────────────
+3) RECOVERY OPPORTUNITIES — Tier 1 / Tier 2 / Tier 3 (same structure as the rest of the app)
+────────────────────────────────────────────────────────
+Classify each recovery_opportunity as "computed" or "projected":
+- COMPUTED — derived directly from dollar amounts documented in the file (billed medicals, lost
+  wages, property damage, liens). estimated_exposure MUST equal that arithmetic exactly.
+- PROJECTED — future or general damages not yet fixed (future medicals, future wage loss, pain and
+  suffering). Bound CONSERVATIVELY to the documented injuries, treatment, and prognosis, using the
+  low, defensible end of a reasonable range.
+
+Map confidence to the app's tier display:
+- high  (Tier 1): strongest, clearly supported — computed from documented amounts, or liability so
+                  well supported it could not be credibly disputed.
+- medium(Tier 2): plausible but dependent on more evidence or a legal-review question.
+- low   (Tier 3): speculative, weak, or uncertain — a genuine arguable path that faces real
+                  obstacles. Include ONLY real arguments, never filler. If none qualify, return none.
+
+PROHIBITED: inventing any number not traceable to a documented line item, calculation, or stated
+injury; using a policy limit or a demand-letter ask as a recovery figure on its own. Every
+estimated_exposure must trace through its "basis" field to specific record content.
+
+────────────────────────────────────────────────────────
+4) ATTORNEY FLAGS — procedural & evidentiary concerns
+────────────────────────────────────────────────────────
+Surface anything counsel must personally act on, prioritized urgent | review | informational. Look
+specifically for: statute-of-limitations exposure; government tort-claim NOTICE / claim-filing
+deadlines; evidence-preservation / spoliation concerns; missing or incomplete medical documentation;
+causation weaknesses; disputed or contested liability; damages gaps; and comparative-fault exposure.
+Tie each to the incident date and page where the record provides one. Treat anything that could
+extinguish the claim (a running limitations or notice clock) as urgent.
+
+────────────────────────────────────────────────────────
+5) CASE GAPS & 6) RECOMMENDED NEXT STEPS
+────────────────────────────────────────────────────────
+case_gaps: what is MISSING from the file that, if obtained, would strengthen liability, causation,
+damages, or collectibility (e.g. employment records to prove respondeat superior, a treating-physician
+narrative, the registered owner of a vehicle, a wage-loss verification). Rate each gap's severity.
+recommended_next_steps: the concrete, practical actions counsel should take FIRST to convert this
+assessment into filing posture — ordered by priority.
+
+You support attorney judgment; you never replace it. Always respond with valid JSON only — no prose,
+no markdown fences, no commentary outside the JSON."""
+
+
+def build_examine_prompt(case_chunk: str, context: str, is_partial: bool = False) -> str:
+    partial_note = "NOTE: This is an excerpt from a larger case file. Assess what you can and do not infer the contents of pages you cannot see." if is_partial else ""
+    return f"""Examine this case file on its merits for maximum defensible plaintiff recovery. Rate the
+case strength, identify EVERY potentially liable party with its legal theory and document basis, lay
+out the recovery opportunities by tier, flag the procedural and evidentiary concerns, identify what is
+missing, and recommend the first steps counsel should take.
+{partial_note}
+{f'Additional context from counsel: {context}' if context else ''}
+
+CASE FILE:
+<case_file>
+{case_chunk}
+</case_file>
+
+Return ONLY this JSON schema — no markdown, no commentary:
+{{
+  "case_strength": "strong | moderate | contested | weak",
+  "strength_summary": "2-3 sentence plain English assessment grounded in the record",
+  "liable_parties": [
+    {{
+      "party": "named party or 'Unidentified [type]'",
+      "party_type": "individual | driver | employer | business | premises_owner | manufacturer | contractor | government | alcohol_vendor | professional | parent_company | insurer | other",
+      "legal_theory": "e.g. negligence, respondeat superior, vicarious liability, premises liability, negligent entrustment, dram shop, product liability, failure to warn, negligent hiring, negligent supervision",
+      "basis": "the document-based basis for implicating this party — cite specifics, never leave empty",
+      "confidence": "high | medium | low",
+      "page_ref": "p. X"
+    }}
+  ],
+  "recovery_opportunities": [
+    {{
+      "theory": "damages category or recovery argument",
+      "recovery_type": "computed | projected",
+      "basis": "what the figure is derived from — cite the line items, calculation, or documented injury. Never leave empty.",
+      "estimated_exposure": "integer string. computed: exact documented/calculated amount (e.g. 18400). projected: a conservative low-end figure bounded by the documented injuries and treatment — NEVER a policy limit or demand ask.",
+      "confidence": "high | medium | low"
+    }}
+  ],
+  "deadlines": [
+    {{
+      "type": "statute_of_limitations | notice_requirement | government_claim | preservation | procedural",
+      "description": "what the deadline or duty governs",
+      "timeframe": "e.g. '2 years from incident date 03/15/2024' or 'unknown — confirm controlling jurisdiction'",
+      "page_ref": "p. X or null"
+    }}
+  ],
+  "case_gaps": [
+    {{
+      "description": "what is missing from the file",
+      "severity": "high | medium | low",
+      "impact": "what obtaining it would do for the case"
+    }}
+  ],
+  "attorney_flags": [
+    {{
+      "priority": "urgent | review | informational",
+      "issue": "clear description (SOL, notice deadline, preservation, missing medicals, causation, contested liability, damages gap, comparative fault, etc.)",
+      "pages": ["p. X"]
+    }}
+  ],
+  "recommended_next_steps": [
+    {{
+      "step": "concrete action counsel should take",
+      "priority": "high | medium | low",
+      "rationale": "why this matters now"
+    }}
+  ]
+}}"""
+
+
+EXAMINE_MERGE_SYSTEM = """You are ThemisOS, a senior plaintiff trial attorney consolidating partial
+examinations of a large case file into one final, authoritative assessment. Preserve every page
+citation. Maintain the same discipline: name only parties and figures the record supports, keep the
+liable-party checklist consistent, hold tier discipline, label uncertainty plainly, and never invent
+facts, parties, or numbers absent from the partials. Respond with valid JSON only."""
+
+
+def build_examine_merge_prompt(partials: list, context: str) -> str:
+    return f"""Merge these partial case examinations into one final assessment.
+Preserve all page citations.
+{f'Context from counsel: {context}' if context else ''}
+
+Partial examinations:
+{json.dumps(partials, indent=2)}
+
+Return a single merged JSON using the same full schema as the partials.
+Rules:
+- Deduplicate parties, theories, and findings but preserve every unique citation
+- Reconcile case_strength to the single most defensible overall rating across the partials
+- Combine all liable_parties, recovery_opportunities, deadlines, case_gaps, attorney_flags, and
+  recommended_next_steps
+- Maintain confidence tiers: Tier 3 (low) only for genuine arguable theories, never padding
+- Do not invent any party, figure, or deadline that no partial contained
+- Synthesize a coherent strength_summary grounded only in the partials"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Core analysis logic
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -479,6 +721,229 @@ def run_cross_examine(policy_text: str, case_text: str, context: str, client) ->
     return safe_parse(raw)
 
 
+def run_case_examine(case_text: str, context: str, client) -> dict:
+    if len(case_text) <= MAX_CHARS:
+        raw = call_with_retry(
+            client,
+            model="claude-sonnet-4-5",
+            max_tokens=16000,
+            system=CASE_EXAMINE_SYSTEM,
+            messages=[{"role": "user", "content": build_examine_prompt(case_text, context)}]
+        )
+        return safe_parse_examine(raw)
+
+    chunks = chunk_text(case_text, MAX_CHARS)
+    partials = []
+    for i, chunk in enumerate(chunks):
+        raw = call_with_retry(
+            client,
+            model="claude-sonnet-4-5",
+            max_tokens=8192,
+            system=CASE_EXAMINE_SYSTEM,
+            messages=[{"role": "user", "content": build_examine_prompt(chunk, context, is_partial=True)}]
+        )
+        partials.append(safe_parse_examine(raw))
+        if i < len(chunks) - 1:
+            time.sleep(2)
+
+    raw = call_with_retry(
+        client,
+        model="claude-sonnet-4-5",
+        max_tokens=16000,
+        system=EXAMINE_MERGE_SYSTEM,
+        messages=[{"role": "user", "content": build_examine_merge_prompt(partials, context)}]
+    )
+    return safe_parse_examine(raw)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Downloadable Case Examination report (dependency-free, print-ready HTML)
+# ─────────────────────────────────────────────────────────────────────────────
+# Returns a self-contained HTML document. The browser's "Save as PDF" turns it
+# into a clean PDF, and it can also be saved/served as a .html file. This keeps
+# the deploy dependency-free; if true server-side PDF is wanted later, render
+# this same HTML through a PDF engine (e.g. WeasyPrint/wkhtmltopdf) WITHOUT
+# touching the /examine-case endpoint or its JSON contract.
+
+_PARTY_TYPE_LABELS = {
+    "individual": "Individual Tortfeasor",
+    "driver": "Driver",
+    "employer": "Employer",
+    "business": "Business",
+    "premises_owner": "Premises Owner",
+    "manufacturer": "Manufacturer / Distributor",
+    "contractor": "Contractor",
+    "government": "Government Entity",
+    "alcohol_vendor": "Alcohol Vendor / Host",
+    "professional": "Professional Provider",
+    "parent_company": "Parent / Franchisor",
+    "insurer": "Insurer",
+    "other": "Other",
+}
+
+_STRENGTH_LABELS = {
+    "strong": "Strong", "moderate": "Moderate",
+    "contested": "Contested", "weak": "Weak",
+}
+
+
+def _esc(value) -> str:
+    if value is None:
+        return ""
+    return html_lib.escape(str(value))
+
+
+def build_examine_report_html(examination: dict, case_name: str = "Case",
+                              claimant: Optional[str] = None) -> str:
+    strength = (examination.get("case_strength") or "unrated")
+    strength_label = _STRENGTH_LABELS.get(strength, "Unrated")
+    summary = examination.get("strength_summary") or ""
+    parties = examination.get("liable_parties") or []
+    recs = examination.get("recovery_opportunities") or []
+    deadlines = examination.get("deadlines") or []
+    gaps = examination.get("case_gaps") or []
+    flags = examination.get("attorney_flags") or []
+    steps = examination.get("recommended_next_steps") or []
+    today = datetime.now().strftime("%B %d, %Y")
+
+    def section_title(t: str) -> str:
+        return (f'<div style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;'
+                f'color:#111;font-weight:700;margin:0 0 10px;border-bottom:1px solid #ddd;'
+                f'padding-bottom:4px">{_esc(t)}</div>')
+
+    # Liable parties
+    parties_html = ""
+    if parties:
+        rows = ""
+        for p in parties:
+            ptype = _PARTY_TYPE_LABELS.get(p.get("party_type", ""), p.get("party_type", ""))
+            page = f' ({_esc(p.get("page_ref"))})' if p.get("page_ref") else ""
+            rows += (
+                f'<div style="margin-bottom:10px;line-height:1.6">'
+                f'<div style="font-weight:700;color:#111">{_esc(p.get("party"))} '
+                f'<span style="font-weight:400;color:#777">· {_esc(ptype)} · '
+                f'{_esc(p.get("confidence"))} confidence</span></div>'
+                f'<div style="color:#333"><em>{_esc(p.get("legal_theory"))}</em> — '
+                f'{_esc(p.get("basis"))}{page}</div></div>'
+            )
+        parties_html = f'<div style="margin-bottom:24px">{section_title("Liable Parties")}{rows}</div>'
+
+    # Recovery opportunities grouped by tier
+    rec_html = ""
+    if recs:
+        def tier_block(label: str, conf: str) -> str:
+            items = [r for r in recs if r.get("confidence") == conf]
+            if not items:
+                return ""
+            rows = ""
+            for r in items:
+                rows += (
+                    f'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+                    f'<span style="color:#222">{_esc(r.get("theory"))} '
+                    f'<span style="color:#888">({_esc(r.get("recovery_type"))})</span></span>'
+                    f'<span style="font-weight:700;color:#111;margin-left:16px;white-space:nowrap">'
+                    f'{_esc(r.get("estimated_exposure"))}</span></div>'
+                )
+            return (f'<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:700;'
+                    f'text-transform:uppercase;letter-spacing:0.06em;color:#555;margin-bottom:4px">'
+                    f'{_esc(label)}</div>{rows}</div>')
+        body = tier_block("Tier 1 · High Confidence", "high") \
+            + tier_block("Tier 2 · Medium Confidence", "medium") \
+            + tier_block("Tier 3 · Lower Confidence", "low")
+        rec_html = f'<div style="margin-bottom:24px">{section_title("Recovery Opportunities")}{body}</div>'
+
+    # Deadlines
+    dl_html = ""
+    if deadlines:
+        rows = ""
+        for d in deadlines:
+            page = f' ({_esc(d.get("page_ref"))})' if d.get("page_ref") else ""
+            dtype = _esc((d.get("type") or "").replace("_", " "))
+            rows += (f'<div style="margin-bottom:8px;line-height:1.6">'
+                     f'<span style="font-weight:700;color:#111;text-transform:capitalize">{dtype}:</span> '
+                     f'{_esc(d.get("description"))} — <em>{_esc(d.get("timeframe"))}</em>{page}</div>')
+        dl_html = f'<div style="margin-bottom:24px">{section_title("Controlling Deadlines")}{rows}</div>'
+
+    # Attorney flags
+    flags_html = ""
+    if flags:
+        rows = ""
+        for f in flags:
+            pages = ", ".join(_esc(x) for x in (f.get("pages") or []))
+            pages = f' ({pages})' if pages else ""
+            rows += (f'<div style="margin-bottom:8px;line-height:1.6">'
+                     f'<span style="font-weight:700;color:#111;text-transform:uppercase">'
+                     f'{_esc(f.get("priority"))}:</span> {_esc(f.get("issue"))}{pages}</div>')
+        flags_html = f'<div style="margin-bottom:24px">{section_title("Attorney Flags")}{rows}</div>'
+
+    # Case gaps
+    gaps_html = ""
+    if gaps:
+        rows = ""
+        for g in gaps:
+            rows += (f'<div style="margin-bottom:8px;line-height:1.6">'
+                     f'<span style="font-weight:700;color:#111">{_esc(g.get("description"))} '
+                     f'<span style="font-weight:400;color:#888">({_esc(g.get("severity"))})</span>:</span> '
+                     f'{_esc(g.get("impact"))}</div>')
+        gaps_html = f'<div style="margin-bottom:24px">{section_title("Case Gaps")}{rows}</div>'
+
+    # Next steps
+    steps_html = ""
+    if steps:
+        items = ""
+        for s in steps:
+            rationale = f' — {_esc(s.get("rationale"))}' if s.get("rationale") else ""
+            items += (f'<li style="margin-bottom:6px;line-height:1.6">'
+                      f'<strong>{_esc(s.get("step"))}</strong>{rationale}</li>')
+        steps_html = (f'<div style="margin-bottom:24px">{section_title("Recommended Next Steps")}'
+                      f'<ol style="margin:0;padding-left:18px">{items}</ol></div>')
+
+    claimant_html = f'<div>Claimant: {_esc(claimant)}</div>' if claimant else ""
+
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>ThemisOS — {_esc(case_name)} — Case Examination</title>
+<style>
+  @page {{ margin: 0.75in; size: letter; }}
+  body {{ font-family: Georgia, serif; color: #111; margin: 0; padding: 32px; background: #fff; }}
+  .wrap {{ max-width: 760px; margin: 0 auto; }}
+  .hdr {{ border-bottom: 2px solid #0d0f12; padding-bottom: 16px; margin-bottom: 28px;
+          display: flex; justify-content: space-between; align-items: flex-start; }}
+  .brand {{ font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }}
+  .brand span {{ color: #C9962B; }}
+  .sub {{ font-size: 11px; color: #666; margin-top: 3px; letter-spacing: 0.1em;
+          text-transform: uppercase; font-family: Arial, sans-serif; }}
+  .meta {{ text-align: right; font-size: 12px; color: #555; font-family: Arial, sans-serif; line-height: 1.6; }}
+  .strength {{ padding: 14px 18px; background: #f5f7fa; border: 1px solid #dde3ec;
+               border-radius: 6px; margin-bottom: 24px; font-family: Arial, sans-serif; }}
+  .strength .lbl {{ font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+                    color: #555; font-weight: 700; margin-bottom: 6px; }}
+  .strength .txt {{ font-size: 13px; color: #222; line-height: 1.7; }}
+  .ftr {{ margin-top: 48px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 10px;
+          color: #aaa; text-align: center; font-family: Arial, sans-serif; }}
+  div, span, li {{ font-size: 12px; font-family: Arial, sans-serif; }}
+</style></head>
+<body><div class="wrap">
+  <div class="hdr">
+    <div><div class="brand">Themis<span>OS</span></div>
+      <div class="sub">Case Examination Report</div></div>
+    <div class="meta"><div style="font-weight:600;color:#111">{_esc(case_name)}</div>
+      {claimant_html}<div>{_esc(today)}</div></div>
+  </div>
+  <div class="strength">
+    <div class="lbl">Case Strength — {_esc(strength_label)}</div>
+    <div class="txt">{_esc(summary)}</div>
+  </div>
+  {parties_html}
+  {rec_html}
+  {dl_html}
+  {flags_html}
+  {gaps_html}
+  {steps_html}
+  <div class="ftr">Generated by ThemisOS · Confidential Attorney Work Product · {_esc(today)}</div>
+</div></body></html>"""
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Routes
 # ─────────────────────────────────────────────────────────────────────────────
@@ -518,6 +983,70 @@ async def cross_examine(
 
     except anthropic.RateLimitError:
         return JSONResponse(status_code=429, content={"error": "Rate limit exceeded. Wait 60 seconds and try again."})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e), "type": type(e).__name__})
+
+
+@app.post("/examine-case")
+async def examine_case(
+    case_file: UploadFile = File(...),
+    context: str = Form(default=""),
+    case_id: str = Form(default=""),
+    case_name: str = Form(default="Unknown Case"),
+    user_email: str = Form(default=""),
+    firm_name: str = Form(default=""),
+):
+    try:
+        case_bytes = await case_file.read()
+        case_text  = extract_file_text(case_bytes, case_file.filename or "case.pdf")
+
+        if not case_text.strip():
+            return JSONResponse(status_code=400, content={"error": "Could not extract text from case file."})
+
+        ai_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+        result = run_case_examine(case_text, context.strip(), ai_client)
+
+        # Counts toward "cases analyzed across all features" (analyses_run) and triggers the
+        # client notification email — but recovery is NOT tracked here. Per product rule,
+        # recovery_identified is written ONLY by the cross-examine flow.
+        if case_id:
+            try:
+                await track_analysis(case_id, case_name, user_email, firm_name)
+            except Exception:
+                pass
+
+        return JSONResponse(content=result)
+
+    except anthropic.RateLimitError:
+        return JSONResponse(status_code=429, content={"error": "Rate limit exceeded. Wait 60 seconds and try again."})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e), "type": type(e).__name__})
+
+
+class ExamineReportRequest(BaseModel):
+    examination: dict
+    case_name: str = "Case"
+    claimant: Optional[str] = None
+
+
+@app.post("/examine-case/report")
+async def examine_case_report(req: ExamineReportRequest):
+    """Generate a downloadable, print-ready Case Examination report from an
+    examination JSON object (the response body of /examine-case). Returns an
+    HTML document with an attachment disposition so the frontend can offer a
+    direct download; the browser's Save-as-PDF produces a clean PDF."""
+    try:
+        report_html = build_examine_report_html(
+            req.examination, req.case_name or "Case", req.claimant
+        )
+        safe_name = "".join(c if c.isalnum() or c in (" ", "-", "_") else "_"
+                            for c in (req.case_name or "Case")).strip().replace(" ", "_")
+        filename = f"ThemisOS_Case_Examination_{safe_name or 'Case'}.html"
+        return Response(
+            content=report_html,
+            media_type="text/html",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e), "type": type(e).__name__})
 
