@@ -15,7 +15,7 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
 
-# v2.3 — cross-examination + case-examination engines, tier discipline & defensibility
+# v2.4 — cross-examination + case-examination + document-analysis engines
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
@@ -138,6 +138,28 @@ def safe_parse_examine(raw: str) -> dict:
             "raw": raw[:2000],
             "liable_parties": [], "recovery_opportunities": [], "deadlines": [],
             "case_gaps": [], "attorney_flags": [], "recommended_next_steps": []
+        }
+
+
+def safe_parse_document(raw: str) -> dict:
+    clean = raw.strip()
+    if clean.startswith("```"):
+        start = clean.find("{")
+        end   = clean.rfind("}") + 1
+        if start != -1 and end > 0:
+            clean = clean[start:end]
+    try:
+        return json.loads(clean)
+    except json.JSONDecodeError as e:
+        return {
+            "error": f"JSON parse error: {e}",
+            "document_grade": "II",
+            "document_type_detected": "unknown",
+            "favors": "unclear",
+            "grade_summary": "Analysis completed but response could not be parsed.",
+            "raw": raw[:2000],
+            "strong_provisions": [], "weak_provisions": [], "attorney_flags": [],
+            "governing_terms": {}, "deadlines": [], "recommended_next_steps": []
         }
 
 
@@ -665,6 +687,250 @@ Rules:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Prompts — Document Analysis (standalone agreement / policy / contract review)
+# ─────────────────────────────────────────────────────────────────────────────
+# Model: Document review of dense transactional instruments benefits from the
+# strongest model. This engine runs only on an explicit user submission, so the
+# per-call cost is acceptable. Change this ONE constant if your account resolves
+# a different Opus alias.
+DOCUMENT_MODEL = "claude-opus-4-8"
+
+DOCUMENT_ANALYSIS_SYSTEM = """You are ThemisOS, a senior transactional attorney reviewing a legal
+document on behalf of a client who is either about to sign it or is already bound by it. Your job is
+the document review a careful lawyer performs before advising a client to sign: what does this
+instrument actually do, which provisions protect the client, which leave the client exposed, what is
+missing, what is unusual, and what should be done before relying on it.
+
+Your work product is reviewed by practicing attorneys and must withstand scrutiny. You review only
+what is in the document and the optional attorney context. You read closely, quote-cite precisely, and
+you are candid: a clear-eyed read of a weak agreement is worth far more than reassurance.
+
+────────────────────────────────────────────────────────
+HARD CONSTRAINTS — read first
+────────────────────────────────────────────────────────
+- Assess ONLY what the document and the optional context support. NEVER fabricate facts, invent
+  clauses that are not present, or describe provisions the document does not contain.
+- NEVER guarantee that any clause is enforceable or unenforceable. Enforceability turns on
+  jurisdiction and facts you may not have — frame enforceability as a concern to verify, and label
+  uncertainty explicitly.
+- A MISSING protection is one of the most valuable things you can surface — when a standard protective
+  provision a careful drafter would include is absent, say so and route it to weak_provisions as a
+  "missing" item.
+- Every strong provision, weak/missing provision, flag, and deadline MUST cite the source page using
+  the [Page N] markers (e.g. "p. 4" or "pp. 7-8"). If you cannot cite it, find the cite or omit it.
+- Read from the protective standpoint of the reviewing party. If the attorney context says which side
+  the client is on, review for that party's protection. If not, identify who the document favors and
+  flag one-sided terms that run against the less-favored party.
+
+────────────────────────────────────────────────────────
+CALIBRATE TO THE DOCUMENT TYPE
+────────────────────────────────────────────────────────
+You will be told the document_type. Apply the lens that matters for that instrument:
+
+- nda / confidentiality: mutual vs. one-sided obligations; the definition and scope of "Confidential
+  Information"; standard carve-outs (publicly known, independently developed, rightfully received,
+  required by law); permitted-use limits; duration / survival of obligations; return-or-destroy
+  duties; remedies (injunctive relief, liquidated damages); residual-knowledge clauses; any embedded
+  non-solicit or non-compete; assignment.
+- insurance_policy: the insuring agreement's scope; exclusions and their breadth; per-claim and
+  aggregate limits and sub-limits; deductibles / self-insured retentions; claims-reporting and NOTICE
+  deadlines and duties after loss; cancellation / non-renewal terms; coverage territory; endorsements
+  that restrict or broaden; whether defense costs erode the limit.
+- renters_agreement: security-deposit amount, return timeline, and permitted deductions; habitability
+  and repair duties; rent, late fees, escalation; early-termination / break-lease penalties; landlord
+  entry and notice; subletting / assignment; renewal / holdover; maintenance allocation; attorneys'-
+  fee shifting; consistency with local landlord-tenant law.
+- employment_contract: non-compete (scope, duration, geography, and enforceability concern) and
+  non-solicit; IP / invention assignment and work-for-hire; confidentiality; at-will vs. fixed term;
+  termination for cause / without cause, notice, and severance; compensation, bonus, equity vesting,
+  and clawback; arbitration / class-action waiver; choice of law.
+- service_agreement: scope of services / SOW; payment and late terms; warranties and disclaimers;
+  limitation of liability and damages caps; indemnification (mutual vs. one-sided); IP ownership of
+  deliverables; termination (for cause / convenience); SLAs; confidentiality; dispute resolution;
+  assignment; force majeure.
+- contractor_agreement: independent-contractor status and misclassification risk; IP assignment;
+  scope and deliverables; payment; indemnification and insurance requirements; termination;
+  non-compete / non-solicit; confidentiality; the degree-of-control terms.
+- purchase_agreement: representations and warranties; indemnification with survival periods, caps, and
+  baskets; conditions to closing; covenants; risk of loss; title and transfer; price, escrow, and
+  holdback; "as-is" disclaimers; remedies; assignment; governing law.
+- operating_agreement: capital contributions; profit/loss allocation and distributions; management
+  (member- vs. manager-managed); voting thresholds; transfer restrictions and rights of first refusal;
+  buy-sell, drag-along, and tag-along; fiduciary duties and any waiver; dissolution; deadlock
+  resolution; indemnification of members/managers.
+- other: apply general contract-review discipline — parties and recitals; each side's obligations and
+  consideration; conditions; representations and warranties; indemnification; limitation of liability;
+  term and termination; assignment; dispute resolution; governing law; and overall one-sidedness.
+
+────────────────────────────────────────────────────────
+1) DOCUMENT GRADE (counsel-grade scale) + plain-English summary
+────────────────────────────────────────────────────────
+Grade the document's overall strength FROM THE REVIEWING PARTY'S PERSPECTIVE:
+- "I"   (Counsel Grade): well-drafted, strong and balanced protections, no material gaps.
+- "II"  (Standard):      adequate, but with notable gaps, ambiguous language, or terms worth
+                         negotiating before signing.
+- "III" (At Risk):       weak, one-sided, or materially deficient — do not rely on or sign without
+                         revision.
+Return the grade as the bare Roman numeral string "I", "II", or "III". Then a 2-3 sentence plain-
+English summary: what the document is, its apparent purpose, who it favors, and the headline concern.
+
+────────────────────────────────────────────────────────
+2) STRONG PROVISIONS  &  3) WEAK / MISSING / ONE-SIDED PROVISIONS
+────────────────────────────────────────────────────────
+strong_provisions: clauses that clearly protect the reviewing party, are unambiguous, and that a
+careful lawyer would be comfortable relying on. Cite each.
+weak_provisions: gaps, one-sided terms, vague or ambiguous language, missing standard protections, and
+clauses whose enforceability is doubtful. For each, classify the issue (weak | missing | one_sided |
+ambiguous | unenforceable), rate severity, explain the risk to the reviewing party, and cite the page
+(use null page_ref only for a genuinely MISSING provision that by definition has no location).
+
+────────────────────────────────────────────────────────
+4) ATTORNEY FLAGS — unusual, predatory, or legally questionable
+────────────────────────────────────────────────────────
+Flag anything counsel must personally scrutinize before the client relies on or signs: unusual or
+predatory terms, hidden fee or penalty structures, automatic renewals, broad indemnities, liability
+caps that gut remedies, clauses of doubtful enforceability, or anything out of market. Prioritize
+urgent | review | informational. "urgent" is for terms that could seriously harm the client or that
+are time-sensitive (e.g. a short window to reject auto-renewal).
+
+────────────────────────────────────────────────────────
+5) GOVERNING TERMS & DEADLINES
+────────────────────────────────────────────────────────
+governing_terms: capture governing law, jurisdiction / venue, any notice requirements, and key dates
+(effective date, term, renewal). Use "unknown" / "none identified" where the document is silent.
+deadlines: every dated or time-bound obligation embedded in the document (term end, renewal / opt-out
+window, termination notice period, cure period, claims-notice deadline). Tie each to a page.
+
+────────────────────────────────────────────────────────
+6) RECOMMENDED NEXT STEPS
+────────────────────────────────────────────────────────
+The concrete actions the reviewing party or counsel should take before signing or relying on the
+document — negotiate a specific term, add a missing protection, confirm enforceability under the
+controlling jurisdiction, calendar a deadline. Order by priority.
+
+You support attorney judgment; you never replace it. Always respond with valid JSON only — no prose,
+no markdown fences, no commentary outside the JSON."""
+
+
+_DOC_TYPE_LABELS = {
+    "nda": "NDA / Confidentiality Agreement",
+    "insurance_policy": "Insurance Policy",
+    "renters_agreement": "Renters / Lease Agreement",
+    "employment_contract": "Employment Contract",
+    "service_agreement": "Service Agreement",
+    "contractor_agreement": "Independent Contractor Agreement",
+    "purchase_agreement": "Purchase Agreement",
+    "operating_agreement": "Operating / Partnership Agreement",
+    "other": "Other Document",
+}
+
+
+def _doc_type_label(document_type: str) -> str:
+    return _DOC_TYPE_LABELS.get((document_type or "").strip().lower(), "Document")
+
+
+def build_document_prompt(doc_chunk: str, document_type: str, context: str,
+                          is_partial: bool = False) -> str:
+    partial_note = "NOTE: This is an excerpt from a larger document. Assess what you can and do not infer the contents of pages you cannot see." if is_partial else ""
+    type_label = _doc_type_label(document_type)
+    return f"""Review this document on behalf of the reviewing party. Grade it, identify the strong
+provisions, surface the weak / missing / one-sided provisions, flag anything unusual or predatory,
+capture governing terms and deadlines, and recommend next steps before signing or relying on it.
+
+DOCUMENT TYPE: {type_label} (code: {document_type})
+Apply the review lens appropriate to this document type.
+{partial_note}
+{f'Additional context from counsel: {context}' if context else ''}
+
+DOCUMENT:
+<document>
+{doc_chunk}
+</document>
+
+Return ONLY this JSON schema — no markdown, no commentary:
+{{
+  "document_grade": "I | II | III",
+  "document_type_detected": "what the document actually appears to be (confirm or correct the provided type)",
+  "favors": "which party the document favors — e.g. 'drafting party', 'balanced / mutual', 'counterparty', or the named party",
+  "grade_summary": "2-3 sentence plain English assessment: what it is, its purpose, who it favors, the headline concern",
+  "strong_provisions": [
+    {{
+      "provision": "short name or title of the clause",
+      "detail": "why this protects the reviewing party",
+      "page_ref": "p. X",
+      "clause": "Section / clause identifier or null"
+    }}
+  ],
+  "weak_provisions": [
+    {{
+      "provision": "clause name, or 'Missing: <protection>' for an absent standard protection",
+      "issue": "weak | missing | one_sided | ambiguous | unenforceable",
+      "detail": "what is wrong and the specific risk to the reviewing party",
+      "severity": "high | medium | low",
+      "page_ref": "p. X (use null ONLY for a genuinely missing provision)",
+      "clause": "Section / clause identifier or null"
+    }}
+  ],
+  "attorney_flags": [
+    {{
+      "priority": "urgent | review | informational",
+      "issue": "unusual, predatory, or legally questionable term the attorney must scrutinize",
+      "pages": ["p. X"]
+    }}
+  ],
+  "governing_terms": {{
+    "governing_law": "e.g. 'Montana' or 'unknown'",
+    "jurisdiction_venue": "e.g. 'exclusive venue, Delaware' or 'unknown'",
+    "notice_requirements": "summary of how notice must be given, or 'none identified'",
+    "key_dates": "effective date / term / renewal summary, or 'none identified'"
+  }},
+  "deadlines": [
+    {{
+      "type": "term | renewal | termination_notice | cure | claims_notice | other",
+      "description": "what the deadline governs",
+      "timeframe": "e.g. '30 days before the anniversary date' or 'auto-renews unless cancelled by 12/01'",
+      "page_ref": "p. X or null"
+    }}
+  ],
+  "recommended_next_steps": [
+    {{
+      "step": "concrete action before signing or relying on the document",
+      "priority": "high | medium | low",
+      "rationale": "why this matters"
+    }}
+  ]
+}}"""
+
+
+DOCUMENT_MERGE_SYSTEM = """You are ThemisOS, a senior transactional attorney consolidating partial
+reviews of a single large document into one final, authoritative assessment. Preserve every page
+citation. Maintain the same discipline: describe only provisions the document actually contains,
+surface missing standard protections, hold the counsel-grade standard, frame enforceability as a
+concern rather than a guarantee, and never invent clauses or terms absent from the partials. Respond
+with valid JSON only."""
+
+
+def build_document_merge_prompt(partials: list, document_type: str, context: str) -> str:
+    type_label = _doc_type_label(document_type)
+    return f"""Merge these partial document reviews into one final assessment.
+DOCUMENT TYPE: {type_label} (code: {document_type})
+Preserve all page citations.
+{f'Context from counsel: {context}' if context else ''}
+
+Partial reviews:
+{json.dumps(partials, indent=2)}
+
+Return a single merged JSON using the same full schema as the partials.
+Rules:
+- Deduplicate provisions and findings but preserve every unique citation
+- Reconcile document_grade to the single most defensible overall grade across the partials
+- Combine all strong_provisions, weak_provisions, attorney_flags, deadlines, and recommended_next_steps
+- Consolidate governing_terms into one object (prefer the most specific non-"unknown" values)
+- Do not invent any provision, term, or deadline that no partial contained
+- Synthesize a coherent grade_summary grounded only in the partials"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Core analysis logic
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -754,6 +1020,41 @@ def run_case_examine(case_text: str, context: str, client) -> dict:
         messages=[{"role": "user", "content": build_examine_merge_prompt(partials, context)}]
     )
     return safe_parse_examine(raw)
+
+
+def run_document_analysis(doc_text: str, document_type: str, context: str, client) -> dict:
+    if len(doc_text) <= MAX_CHARS:
+        raw = call_with_retry(
+            client,
+            model=DOCUMENT_MODEL,
+            max_tokens=16000,
+            system=DOCUMENT_ANALYSIS_SYSTEM,
+            messages=[{"role": "user", "content": build_document_prompt(doc_text, document_type, context)}]
+        )
+        return safe_parse_document(raw)
+
+    chunks = chunk_text(doc_text, MAX_CHARS)
+    partials = []
+    for i, chunk in enumerate(chunks):
+        raw = call_with_retry(
+            client,
+            model=DOCUMENT_MODEL,
+            max_tokens=8192,
+            system=DOCUMENT_ANALYSIS_SYSTEM,
+            messages=[{"role": "user", "content": build_document_prompt(chunk, document_type, context, is_partial=True)}]
+        )
+        partials.append(safe_parse_document(raw))
+        if i < len(chunks) - 1:
+            time.sleep(2)
+
+    raw = call_with_retry(
+        client,
+        model=DOCUMENT_MODEL,
+        max_tokens=16000,
+        system=DOCUMENT_MERGE_SYSTEM,
+        messages=[{"role": "user", "content": build_document_merge_prompt(partials, document_type, context)}]
+    )
+    return safe_parse_document(raw)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -945,6 +1246,163 @@ def build_examine_report_html(examination: dict, case_name: str = "Case",
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Downloadable Document Analysis report (dependency-free, print-ready HTML)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_DOC_GRADE_LABELS = {
+    "I": "I · Counsel Grade",
+    "II": "II · Standard",
+    "III": "III · At Risk",
+}
+
+
+def build_document_report_html(analysis: dict, case_name: str = "Document",
+                               document_type: str = "other") -> str:
+    grade = (analysis.get("document_grade") or "II")
+    grade_label = _DOC_GRADE_LABELS.get(grade, f"{grade} · Unrated")
+    type_label = _doc_type_label(document_type)
+    detected = analysis.get("document_type_detected") or ""
+    favors = analysis.get("favors") or ""
+    summary = analysis.get("grade_summary") or ""
+    strong = analysis.get("strong_provisions") or []
+    weak = analysis.get("weak_provisions") or []
+    flags = analysis.get("attorney_flags") or []
+    gov = analysis.get("governing_terms") or {}
+    deadlines = analysis.get("deadlines") or []
+    steps = analysis.get("recommended_next_steps") or []
+    today = datetime.now().strftime("%B %d, %Y")
+
+    def section_title(t: str) -> str:
+        return (f'<div style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;'
+                f'color:#111;font-weight:700;margin:0 0 10px;border-bottom:1px solid #ddd;'
+                f'padding-bottom:4px">{_esc(t)}</div>')
+
+    # Strong provisions
+    strong_html = ""
+    if strong:
+        rows = ""
+        for p in strong:
+            clause = f' · {_esc(p.get("clause"))}' if p.get("clause") else ""
+            page = f' ({_esc(p.get("page_ref"))})' if p.get("page_ref") else ""
+            rows += (f'<div style="margin-bottom:10px;line-height:1.6">'
+                     f'<span style="font-weight:700;color:#111">{_esc(p.get("provision"))}{clause}:</span> '
+                     f'{_esc(p.get("detail"))}{page}</div>')
+        strong_html = f'<div style="margin-bottom:24px">{section_title("Strong Provisions")}{rows}</div>'
+
+    # Weak / missing / one-sided provisions
+    weak_html = ""
+    if weak:
+        rows = ""
+        for p in weak:
+            clause = f' · {_esc(p.get("clause"))}' if p.get("clause") else ""
+            page = f' ({_esc(p.get("page_ref"))})' if p.get("page_ref") else ""
+            issue = _esc((p.get("issue") or "").replace("_", " "))
+            sev = _esc(p.get("severity"))
+            rows += (f'<div style="margin-bottom:10px;line-height:1.6">'
+                     f'<span style="font-weight:700;color:#111">{_esc(p.get("provision"))}{clause} '
+                     f'<span style="font-weight:400;color:#888">[{issue} · {sev}]</span>:</span> '
+                     f'{_esc(p.get("detail"))}{page}</div>')
+        weak_html = f'<div style="margin-bottom:24px">{section_title("Weak / Missing / One-Sided Provisions")}{rows}</div>'
+
+    # Attorney flags
+    flags_html = ""
+    if flags:
+        rows = ""
+        for f in flags:
+            pages = ", ".join(_esc(x) for x in (f.get("pages") or []))
+            pages = f' ({pages})' if pages else ""
+            rows += (f'<div style="margin-bottom:8px;line-height:1.6">'
+                     f'<span style="font-weight:700;color:#111;text-transform:uppercase">'
+                     f'{_esc(f.get("priority"))}:</span> {_esc(f.get("issue"))}{pages}</div>')
+        flags_html = f'<div style="margin-bottom:24px">{section_title("Attorney Flags")}{rows}</div>'
+
+    # Governing terms
+    gov_html = ""
+    if gov:
+        def grow(lbl, key):
+            val = gov.get(key)
+            if not val:
+                return ""
+            return (f'<div style="margin-bottom:6px;line-height:1.6">'
+                    f'<span style="font-weight:700;color:#111">{_esc(lbl)}:</span> {_esc(val)}</div>')
+        body = (grow("Governing Law", "governing_law")
+                + grow("Jurisdiction / Venue", "jurisdiction_venue")
+                + grow("Notice Requirements", "notice_requirements")
+                + grow("Key Dates", "key_dates"))
+        if body:
+            gov_html = f'<div style="margin-bottom:24px">{section_title("Governing Terms")}{body}</div>'
+
+    # Deadlines
+    dl_html = ""
+    if deadlines:
+        rows = ""
+        for d in deadlines:
+            page = f' ({_esc(d.get("page_ref"))})' if d.get("page_ref") else ""
+            dtype = _esc((d.get("type") or "").replace("_", " "))
+            rows += (f'<div style="margin-bottom:8px;line-height:1.6">'
+                     f'<span style="font-weight:700;color:#111;text-transform:capitalize">{dtype}:</span> '
+                     f'{_esc(d.get("description"))} — <em>{_esc(d.get("timeframe"))}</em>{page}</div>')
+        dl_html = f'<div style="margin-bottom:24px">{section_title("Deadlines")}{rows}</div>'
+
+    # Next steps
+    steps_html = ""
+    if steps:
+        items = ""
+        for s in steps:
+            rationale = f' — {_esc(s.get("rationale"))}' if s.get("rationale") else ""
+            items += (f'<li style="margin-bottom:6px;line-height:1.6">'
+                      f'<strong>{_esc(s.get("step"))}</strong>{rationale}</li>')
+        steps_html = (f'<div style="margin-bottom:24px">{section_title("Recommended Next Steps")}'
+                      f'<ol style="margin:0;padding-left:18px">{items}</ol></div>')
+
+    detected_html = f'<div>Detected: {_esc(detected)}</div>' if detected else ""
+    favors_html = f'<div>Favors: {_esc(favors)}</div>' if favors else ""
+
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>ThemisOS — {_esc(case_name)} — Document Analysis</title>
+<style>
+  @page {{ margin: 0.75in; size: letter; }}
+  body {{ font-family: Georgia, serif; color: #111; margin: 0; padding: 32px; background: #fff; }}
+  .wrap {{ max-width: 760px; margin: 0 auto; }}
+  .hdr {{ border-bottom: 2px solid #0d0f12; padding-bottom: 16px; margin-bottom: 28px;
+          display: flex; justify-content: space-between; align-items: flex-start; }}
+  .brand {{ font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }}
+  .brand span {{ color: #C9962B; }}
+  .sub {{ font-size: 11px; color: #666; margin-top: 3px; letter-spacing: 0.1em;
+          text-transform: uppercase; font-family: Arial, sans-serif; }}
+  .meta {{ text-align: right; font-size: 12px; color: #555; font-family: Arial, sans-serif; line-height: 1.6; }}
+  .grade {{ padding: 14px 18px; background: #f5f7fa; border: 1px solid #dde3ec;
+            border-radius: 6px; margin-bottom: 24px; font-family: Arial, sans-serif; }}
+  .grade .lbl {{ font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+                 color: #555; font-weight: 700; margin-bottom: 6px; }}
+  .grade .txt {{ font-size: 13px; color: #222; line-height: 1.7; }}
+  .ftr {{ margin-top: 48px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 10px;
+          color: #aaa; text-align: center; font-family: Arial, sans-serif; }}
+  div, span, li {{ font-size: 12px; font-family: Arial, sans-serif; }}
+</style></head>
+<body><div class="wrap">
+  <div class="hdr">
+    <div><div class="brand">Themis<span>OS</span></div>
+      <div class="sub">Document Analysis Report · {_esc(type_label)}</div></div>
+    <div class="meta"><div style="font-weight:600;color:#111">{_esc(case_name)}</div>
+      {detected_html}{favors_html}<div>{_esc(today)}</div></div>
+  </div>
+  <div class="grade">
+    <div class="lbl">Document Grade — {_esc(grade_label)}</div>
+    <div class="txt">{_esc(summary)}</div>
+  </div>
+  {strong_html}
+  {weak_html}
+  {flags_html}
+  {gov_html}
+  {dl_html}
+  {steps_html}
+  <div class="ftr">Generated by ThemisOS · Confidential Attorney Work Product · {_esc(today)}</div>
+</div></body></html>"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Routes
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1023,6 +1481,43 @@ async def examine_case(
         return JSONResponse(status_code=500, content={"error": str(e), "type": type(e).__name__})
 
 
+@app.post("/analyze-document")
+async def analyze_document(
+    document: UploadFile = File(...),
+    document_type: str = Form(default="other"),
+    context: str = Form(default=""),
+    case_id: str = Form(default=""),
+    case_name: str = Form(default="Unknown Document"),
+    user_email: str = Form(default=""),
+    firm_name: str = Form(default=""),
+):
+    try:
+        doc_bytes = await document.read()
+        doc_text  = extract_file_text(doc_bytes, document.filename or "document.pdf")
+
+        if not doc_text.strip():
+            return JSONResponse(status_code=400, content={"error": "Could not extract text from document."})
+
+        ai_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+        result = run_document_analysis(doc_text, document_type.strip() or "other", context.strip(), ai_client)
+
+        # Counts toward "cases analyzed across all features" (analyses_run) and triggers the
+        # client notification email — but recovery is NOT tracked here. Per product rule,
+        # recovery_identified is written ONLY by the cross-examine flow.
+        if case_id:
+            try:
+                await track_analysis(case_id, case_name, user_email, firm_name)
+            except Exception:
+                pass
+
+        return JSONResponse(content=result)
+
+    except anthropic.RateLimitError:
+        return JSONResponse(status_code=429, content={"error": "Rate limit exceeded. Wait 60 seconds and try again."})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e), "type": type(e).__name__})
+
+
 class ExamineReportRequest(BaseModel):
     examination: dict
     case_name: str = "Case"
@@ -1042,6 +1537,34 @@ async def examine_case_report(req: ExamineReportRequest):
         safe_name = "".join(c if c.isalnum() or c in (" ", "-", "_") else "_"
                             for c in (req.case_name or "Case")).strip().replace(" ", "_")
         filename = f"ThemisOS_Case_Examination_{safe_name or 'Case'}.html"
+        return Response(
+            content=report_html,
+            media_type="text/html",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e), "type": type(e).__name__})
+
+
+class DocumentReportRequest(BaseModel):
+    analysis: dict
+    case_name: str = "Document"
+    document_type: str = "other"
+
+
+@app.post("/analyze-document/report")
+async def analyze_document_report(req: DocumentReportRequest):
+    """Generate a downloadable, print-ready Document Analysis report from an
+    analysis JSON object (the response body of /analyze-document). Returns an
+    HTML document with an attachment disposition so the frontend can offer a
+    direct download; the browser's Save-as-PDF produces a clean PDF."""
+    try:
+        report_html = build_document_report_html(
+            req.analysis, req.case_name or "Document", req.document_type or "other"
+        )
+        safe_name = "".join(c if c.isalnum() or c in (" ", "-", "_") else "_"
+                            for c in (req.case_name or "Document")).strip().replace(" ", "_")
+        filename = f"ThemisOS_Document_Analysis_{safe_name or 'Document'}.html"
         return Response(
             content=report_html,
             media_type="text/html",
