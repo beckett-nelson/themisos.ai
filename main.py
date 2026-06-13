@@ -74,7 +74,10 @@ def chunk_text(text: str, max_chars: int = MAX_CHARS) -> list:
 
 
 def call_with_retry(client, **kwargs) -> str:
-    kwargs.setdefault("temperature", 0)
+    if kwargs.pop("no_temperature", False):
+        pass
+    else:
+        kwargs.setdefault("temperature", 0)
     delay = 5
     retryable = (
         anthropic.RateLimitError,        # 429 rate limit
@@ -1029,6 +1032,7 @@ def run_document_analysis(doc_text: str, document_type: str, context: str, clien
             model=DOCUMENT_MODEL,
             max_tokens=16000,
             system=DOCUMENT_ANALYSIS_SYSTEM,
+            no_temperature=True,
             messages=[{"role": "user", "content": build_document_prompt(doc_text, document_type, context)}]
         )
         return safe_parse_document(raw)
@@ -1041,6 +1045,7 @@ def run_document_analysis(doc_text: str, document_type: str, context: str, clien
             model=DOCUMENT_MODEL,
             max_tokens=8192,
             system=DOCUMENT_ANALYSIS_SYSTEM,
+            no_temperature=True,
             messages=[{"role": "user", "content": build_document_prompt(chunk, document_type, context, is_partial=True)}]
         )
         partials.append(safe_parse_document(raw))
