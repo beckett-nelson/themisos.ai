@@ -48,7 +48,7 @@ export default function DashboardPage() {
       if (profile?.full_name) setUserName(profile.full_name.split(' ')[0])
       const { data: casesData } = await supabase
         .from('cases')
-        .select('*')
+        .select('id, name, claimant, status, documents_analyzed, recovery_identified, created_at, last_analysis, last_examine, last_document_analysis')
         .order('created_at', { ascending: false })
       setCases(casesData || [])
       setLoading(false)
