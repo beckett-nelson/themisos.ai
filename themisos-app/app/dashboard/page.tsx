@@ -267,7 +267,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {cases.map(c => {
+                {[...cases].sort((a, b) => (b[cfg.field] ? 1 : 0) - (a[cfg.field] ? 1 : 0)).map(c => {
                   const hasResult = !!(c[cfg.field])
                   return (
                     <tr key={c.id} className="case-row" style={{ borderBottom: '1px solid #1A2E4A', transition: 'background 0.15s' }}>
