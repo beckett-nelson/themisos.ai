@@ -165,20 +165,27 @@ async def _apply_subscription(sub: dict) -> None:
     item = (sub.get("items", {}).get("data") or [{}])[0]
     seats = item.get("quantity")
     sub_item_id = item.get("id")
-    price_id = (item.get("price") or {}).get("id")
+    price = item.get("price") or {}
+    price_id = price.get("id")
+    case_cap = (price.get("metadata") or {}).get("case_cap")
 
     fields = {
         "stripe_subscription_id": sub.get("id"),
         "stripe_subscription_item_id": sub_item_id,
         "stripe_price_id": price_id,
         "subscription_status": STATUS_MAP.get(sub.get("status"), "incomplete"),
+        "current_period_start": _iso(sub.get("current_period_start")),
         "current_period_end": _iso(sub.get("current_period_end")),
     }
-    if seats:                       # Stripe quantity is the seat source of truth
+    if seats:
         fields["seats_allowed"] = seats
+    if case_cap is not None:
+        try:
+            fields["monthly_case_cap"] = int(case_cap)
+        except (TypeError, ValueError):
+            pass
     fields = {k: v for k, v in fields.items() if v is not None}
 
-    # Prefer the org_id carried in metadata; fall back to matching the subscription id.
     if org_id:
         await _patch_org(org_id, fields)
     else:
