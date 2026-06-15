@@ -9,6 +9,7 @@ import html as html_lib
 from datetime import datetime
 import httpx
 from io import BytesIO
+from billing import router as billing_router
 
 app = FastAPI()
 
@@ -1709,5 +1710,5 @@ async def health():
         "sendgrid_configured": bool(os.environ.get("SENDGRID_API_KEY"))
     }
 
-
+app.include_router(billing_router)
 app.mount("/", StaticFiles(directory=".", html=True), name="static")

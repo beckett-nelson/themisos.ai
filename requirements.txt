@@ -32,3 +32,4 @@ flask
 pymupdf
 flask-cors
 gunicorn
+stripe
