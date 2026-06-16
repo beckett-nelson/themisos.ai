@@ -86,6 +86,36 @@ async def _send_branded_email(to_email: str, subject: str, html: str):
     return False, res.text
 
 
+# Supabase service-role REST (creates the firm row when no org_id is passed)
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+
+
+async def _create_org(firm_name: str) -> dict:
+    """Insert a new organizations row (the firm) and return it. Used when
+    /onboard-firm is called with no organization_id so the admin form needs no
+    pre-step. billing_owner_id stays null until the owner accepts the invite."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        raise RuntimeError("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set.")
+    headers = {
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+    }
+    payload = {"name": firm_name, "subscription_status": "pending"}
+    async with httpx.AsyncClient() as client:
+        res = await client.post(
+            f"{SUPABASE_URL}/rest/v1/organizations",
+            headers=headers,
+            json=payload,
+        )
+    if res.status_code not in (200, 201):
+        raise RuntimeError(f"Supabase org insert failed ({res.status_code}): {res.text}")
+    rows = res.json()
+    return rows[0] if isinstance(rows, list) and rows else rows
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Branded activation email
 # ─────────────────────────────────────────────────────────────────────────────
@@ -174,7 +204,7 @@ async def send_activation_email(req: ActivationEmailRequest):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class OnboardFirmRequest(BaseModel):
-    organization_id: str
+    organization_id: Optional[str] = None
     owner_email: str
     firm_name: str
     seats: int = 1
@@ -193,9 +223,20 @@ async def onboard_firm(req: OnboardFirmRequest):
         return JSONResponse(status_code=500,
                             content={"error": f"Stripe price for tier {req.tier} not configured."})
 
-    org = await _get_org(f"id=eq.{req.organization_id}")
-    if not org:
-        return JSONResponse(status_code=404, content={"error": "Organization not found."})
+    # No organization_id -> create the firm row first (admin form has no pre-step).
+    if req.organization_id:
+        org_id = req.organization_id
+        org = await _get_org(f"id=eq.{org_id}")
+        if not org:
+            return JSONResponse(status_code=404, content={"error": "Organization not found."})
+    else:
+        try:
+            org = await _create_org(req.firm_name)
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": f"Could not create firm: {e}"})
+        org_id = org.get("id")
+        if not org_id:
+            return JSONResponse(status_code=500, content={"error": "Firm created but no id returned."})
 
     seats = max(1, int(req.seats or 1))
     coupon_id, pct, band = _band_for_seats(seats)
@@ -213,17 +254,17 @@ async def onboard_firm(req: OnboardFirmRequest):
             customer = stripe.Customer.create(
                 email=req.owner_email,
                 name=req.firm_name or None,
-                metadata={"organization_id": req.organization_id},
+                metadata={"organization_id": org_id},
             )
             customer_id = customer.id
-            await _patch_org(req.organization_id, {"stripe_customer_id": customer_id})
+            await _patch_org(org_id, {"stripe_customer_id": customer_id})
 
         base_args = dict(
             mode="subscription",
             customer=customer_id,
             line_items=[{"price": price_id, "quantity": seats}],
-            subscription_data={"metadata": {"organization_id": req.organization_id}},
-            metadata={"organization_id": req.organization_id},
+            subscription_data={"metadata": {"organization_id": org_id}},
+            metadata={"organization_id": org_id},
             success_url=f"{PLATFORM_URL}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{PLATFORM_URL}/billing/cancelled",
         )
