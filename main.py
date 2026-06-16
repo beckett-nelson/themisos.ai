@@ -10,6 +10,7 @@ from datetime import datetime
 import httpx
 from io import BytesIO
 from billing import router as billing_router
+from onboarding import router as onboarding_router
 
 app = FastAPI()
 
@@ -1711,4 +1712,5 @@ async def health():
     }
 
 app.include_router(billing_router)
+app.include_router(onboarding_router)
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
