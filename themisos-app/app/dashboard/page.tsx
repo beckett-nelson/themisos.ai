@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [userName, setUserName] = useState('there')
   const [userEmail, setUserEmail] = useState('')
+  const [userRole, setUserRole] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('cross')
   const router = useRouter()
@@ -44,7 +45,8 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
       setUserEmail(user.email || '')
-      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+      const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', user.id).single()
+      setUserRole(profile?.role || '')
       if (profile?.full_name) {
         setUserName(profile.full_name.split(' ')[0])
       } else if (user.email) {
@@ -82,7 +84,21 @@ export default function DashboardPage() {
     setConfirmDelete(null)
   }
 
-  const isAdmin = userEmail === ADMIN_EMAIL
+  const isSuperAdmin = userEmail === ADMIN_EMAIL
+  const isManager = !isSuperAdmin && ['owner', 'billing_admin', 'admin'].includes(userRole)
+
+  const navLinks = isSuperAdmin
+    ? [
+        { href: '/admin/onboard', label: 'Invite Firm', icon: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></> },
+        { href: '/admin/clients', label: 'Firms', icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></> },
+      ]
+    : isManager
+    ? [
+        { href: '/team', label: 'Invite Member', icon: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></> },
+        { href: '/team', label: 'Members', icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></> },
+      ]
+    : []
+
   const cfg = TAB_CONFIG[activeTab]
 
   return (
@@ -137,12 +153,9 @@ export default function DashboardPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: '24px' }}>
-          {isAdmin && (
+          {navLinks.length > 0 && (
             <>
-              {[
-                { href: '/admin/invite', label: 'Invite Client', icon: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></> },
-                { href: '/admin/clients', label: 'Clients', icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></> },
-              ].map(({ href, label, icon }) => (
+              {navLinks.map(({ href, label, icon }) => (
                 <a key={href} href={href} style={{
                   display: 'inline-flex', alignItems: 'center', gap: '6px',
                   fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase',
