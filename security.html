@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Security & Data Handling — ThemisOS</title>
+<title>Security &amp; Data Handling — ThemisOS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -15,6 +15,7 @@
   --ink-mid:#0A1220;
   --ink-light:#101E33;
   --ink-border:#1A2E4A;
+  --ink-strip:#0d1526;
   --gold:#C9962B;
   --gold-light:#E2B44A;
   --gold-dim:#7A5A18;
@@ -46,33 +47,34 @@ body::before{
   pointer-events:none;z-index:0;opacity:0.7;
 }
 
-/* NAV */
+/* NAV — matched to the app shell */
 nav{
   position:fixed;top:0;left:0;right:0;z-index:200;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:1.5rem 3rem;
+  display:flex;align-items:center;
+  height:64px;padding:0 3rem;
   background:rgba(5,9,15,0.92);
   border-bottom:1px solid var(--ink-border);
   backdrop-filter:blur(16px);
 }
 .nav-brand{
+  display:flex;align-items:center;gap:0.7rem;
+  padding-right:1.5rem;margin-right:1.5rem;
+  border-right:1px solid var(--ink-border);
+  height:100%;
+}
+.nav-brand svg{width:24px;height:24px;flex-shrink:0}
+.nav-brand .wordmark{
   font-family:var(--font-serif);
-  font-size:1.25rem;
-  font-weight:600;
-  letter-spacing:0.08em;
-  color:var(--white);
-  display:flex;align-items:center;gap:0.75rem;
+  font-size:1.3rem;font-weight:600;letter-spacing:0.01em;
+  color:var(--white);line-height:1;
 }
-.nav-brand svg{width:22px;height:22px;opacity:0.85}
-.nav-back{
-  font-size:0.8rem;
-  letter-spacing:0.1em;
-  text-transform:uppercase;
-  color:var(--muted);
-  display:flex;align-items:center;gap:0.4rem;
-  transition:color .2s;
+.nav-brand .wordmark span{color:var(--gold)}
+.nav-links{margin-left:auto;display:flex;align-items:center;gap:1.5rem}
+.nav-links a{
+  font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--muted);transition:color .2s;
 }
-.nav-back:hover{color:var(--gold)}
+.nav-links a:hover{color:var(--parchment)}
 
 /* HERO */
 .hero{
@@ -121,10 +123,11 @@ nav{
 .trust-cell{
   padding:2.5rem 2rem;
   border-right:1px solid var(--ink-border);
-  display:flex;flex-direction:column;gap:0.75rem;
+  display:flex;flex-direction:column;gap:0.85rem;
 }
 .trust-cell:last-child{border-right:none}
-.trust-icon{font-size:1.4rem;opacity:0.8}
+.trust-icon{color:var(--gold);height:26px;display:flex;align-items:center}
+.trust-icon svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.5}
 .trust-label{
   font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;
   color:var(--gold);font-weight:600;font-family:var(--font-ui);
@@ -215,9 +218,9 @@ nav{
   width:26px;height:26px;border-radius:50%;
   background:var(--gold-glow);border:1px solid var(--gold-dim);
   display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;margin-top:0.1rem;
-  color:var(--gold);font-size:0.8rem;
+  flex-shrink:0;margin-top:0.1rem;color:var(--gold);
 }
+.check-icon svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5}
 .check-text{
   font-family:var(--font-serif);
   font-size:1.05rem;
@@ -243,8 +246,9 @@ nav{
   width:24px;height:24px;border-radius:50%;
   background:var(--red-dim);border:1px solid rgba(192,84,74,0.3);
   display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;color:var(--red);font-size:0.7rem;font-weight:700;
+  flex-shrink:0;color:var(--red);
 }
+.x-icon svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.5}
 .x-text{
   font-family:var(--font-serif);
   font-size:1.05rem;
@@ -298,6 +302,13 @@ nav{
 }
 .flow-table tr:last-child td{border-bottom:none}
 
+/* SUBPROCESSOR NOTE */
+.sub-note{
+  margin-top:1.5rem;font-family:var(--font-serif);
+  font-size:1.05rem;color:var(--parchment-dim);line-height:1.8;
+}
+.sub-note a{color:var(--gold);text-decoration:underline;text-underline-offset:3px}
+
 /* CTA */
 .cta-block{
   margin-top:5rem;
@@ -346,9 +357,11 @@ footer{
   font-size:0.8rem;color:var(--muted);
 }
 footer a:hover{color:var(--gold)}
+.footer-links a{margin-left:0.4rem}
+.footer-links a:not(:last-child)::after{content:'';}
 
 @media(max-width:700px){
-  nav{padding:1rem 1.25rem}
+  nav{padding:0 1.25rem}
   .hero{padding:8rem 1.25rem 4rem}
   .trust-strip{grid-template-columns:1fr 1fr}
   .trust-cell{border-right:none;border-bottom:1px solid var(--ink-border)}
@@ -362,13 +375,24 @@ footer a:hover{color:var(--gold)}
 
 <!-- NAV -->
 <nav>
-  <div class="nav-brand">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold)">
-      <path d="M12 3v18M5 8l7-5 7 5M3 10l4 8h10l4-8"/>
+  <a href="index.html" class="nav-brand">
+    <svg viewBox="0 0 64 64" fill="none">
+      <rect x="30" y="8" width="4" height="44" rx="2" fill="#C9962B"/>
+      <rect x="20" y="50" width="24" height="2.5" rx="1.25" fill="#C9962B"/>
+      <circle cx="32" cy="8" r="3.5" fill="#C9962B"/>
+      <rect x="8" y="20" width="48" height="2" rx="1" fill="#C9962B"/>
+      <line x1="12" y1="22" x2="12" y2="31" stroke="#C9962B" stroke-width="1.5"/>
+      <line x1="52" y1="22" x2="52" y2="31" stroke="#C9962B" stroke-width="1.5"/>
+      <path d="M6 31 Q12 36 18 31" stroke="#C9962B" stroke-width="2" fill="none"/>
+      <path d="M46 31 Q52 36 58 31" stroke="#C9962B" stroke-width="2" fill="none"/>
     </svg>
-    THEMISOS
+    <span class="wordmark">Themis<span>OS</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="https://platform.themisos.ai/privacy">Privacy</a>
+    <a href="https://platform.themisos.ai/terms">Terms</a>
   </div>
-  <a href="index.html" class="nav-back">← Back to Home</a>
 </nav>
 
 <!-- HERO -->
@@ -376,28 +400,36 @@ footer a:hover{color:var(--gold)}
   <div class="hero-rule"><span>ThemisOS — Trust &amp; Security</span></div>
   <h1>Data Handling<br>&amp; <em>Privilege</em></h1>
   <div class="hero-divider"></div>
-  <p>What we do with your documents, how we protect attorney-client privilege, and the commitments we make to every attorney we work with.</p>
+  <p>What we do with your documents, how we protect attorney-client privilege, and the commitments we make to every firm we work with.</p>
 </section>
 
 <!-- TRUST STRIP -->
 <div class="trust-strip">
   <div class="trust-cell">
-    <div class="trust-icon">🔒</div>
-    <div class="trust-label">No Data Retention</div>
-    <div class="trust-desc">Documents are not stored after your session ends</div>
+    <div class="trust-icon">
+      <svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><line x1="8" y1="20" x2="16" y2="4"/></svg>
+    </div>
+    <div class="trust-label">No Document Retention</div>
+    <div class="trust-desc">Uploaded files are discarded after analysis — never stored on our systems</div>
   </div>
   <div class="trust-cell">
-    <div class="trust-icon">⚖️</div>
+    <div class="trust-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+    </div>
     <div class="trust-label">Privilege Protected</div>
-    <div class="trust-desc">Attorney-client privilege built into every workflow</div>
+    <div class="trust-desc">Per-firm workspaces with access restricted by row-level controls</div>
   </div>
   <div class="trust-cell">
-    <div class="trust-icon">🚫</div>
+    <div class="trust-icon">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>
+    </div>
     <div class="trust-label">No Model Training</div>
-    <div class="trust-desc">Your files never train any AI model — ours or third-party</div>
+    <div class="trust-desc">Your files never train any AI model — ours or any provider's</div>
   </div>
   <div class="trust-cell">
-    <div class="trust-icon">✦</div>
+    <div class="trust-icon">
+      <svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><line x1="8.2" y1="10.9" x2="15.8" y2="7.1"/><line x1="8.2" y1="13.1" x2="15.8" y2="16.9"/><line x1="4.5" y1="4.5" x2="19.5" y2="19.5"/></svg>
+    </div>
     <div class="trust-label">No Third-Party Sharing</div>
     <div class="trust-desc">We do not sell, license, or share your data — ever</div>
   </div>
@@ -411,22 +443,22 @@ footer a:hover{color:var(--gold)}
     <div class="sec-num">01</div>
     <h2>Your documents are <em>yours.</em><br>Full stop.</h2>
     <div class="sec-divider"></div>
-    <p>When you upload policy documents, complaints, correspondence, or any other materials to ThemisOS, those files exist for one purpose only: completing the analysis you asked for. They are not indexed, catalogued, stored in a database, or reviewed by anyone other than the team you've authorized to work on your matter.</p>
+    <p>When you upload policy documents, complaints, correspondence, or any other materials to ThemisOS, those files exist for one purpose only: completing the analysis you asked for. They are not indexed, catalogued, or kept in a document store, and they are never reviewed by anyone outside the engagement your firm has authorized.</p>
     <div class="blockquote">
       <p>We built ThemisOS for plaintiff attorneys. We understand that the documents you upload may be the most sensitive materials in an active case. We treat them accordingly.</p>
     </div>
     <div class="check-list">
       <div class="check-item">
-        <div class="check-icon">✓</div>
-        <div class="check-text"><strong>Session-scoped processing.</strong> Documents are processed in isolated environments tied to your active session. When the session closes, document content is not retained.</div>
+        <div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text"><strong>In-memory processing.</strong> Uploaded documents are processed in memory to produce your analysis, then discarded. No copy of your original file is written to our storage.</div>
       </div>
       <div class="check-item">
-        <div class="check-icon">✓</div>
-        <div class="check-text"><strong>No long-term storage by default.</strong> Unless you and ThemisOS have separately agreed in writing to retain materials for a multi-session engagement, files are not stored beyond the active session.</div>
+        <div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text"><strong>Documents discarded, results saved to your workspace.</strong> We do not retain the files you upload. The analysis results we generate are saved to your firm's workspace so you can return to them — and you can request their deletion at any time.</div>
       </div>
       <div class="check-item">
-        <div class="check-icon">✓</div>
-        <div class="check-text"><strong>Encrypted in transit.</strong> All document uploads and data transmission occur over TLS-encrypted connections. Your files are never transmitted in plain text.</div>
+        <div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text"><strong>Encrypted in transit.</strong> All uploads and data transmission occur over TLS-encrypted connections. Your files are never transmitted in plain text.</div>
       </div>
     </div>
   </div>
@@ -439,16 +471,16 @@ footer a:hover{color:var(--gold)}
     <p>This is non-negotiable and applies without exception. The materials you share with ThemisOS — policy documents, litigation filings, demand letters, adjuster correspondence, or anything else — are never used to improve, fine-tune, or train any AI model, whether that's our own systems or any third-party model provider we work with.</p>
     <div class="check-list">
       <div class="check-item">
-        <div class="check-icon">✓</div>
-        <div class="check-text"><strong>Zero-training guarantee.</strong> Your document content is used solely to produce the output you requested. It is not fed back into any training pipeline.</div>
+        <div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text"><strong>Zero-training commitment.</strong> Your document content is used solely to produce the output you requested. It is not fed into any training pipeline.</div>
       </div>
       <div class="check-item">
-        <div class="check-icon">✓</div>
-        <div class="check-text"><strong>Applies to all model providers.</strong> Where ThemisOS uses third-party AI infrastructure, we use APIs with contractual data processing agreements that prohibit training on customer data.</div>
+        <div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text"><strong>Applies to our model provider.</strong> Document text is processed through Anthropic's commercial API, whose terms prohibit training on your inputs and outputs and delete them within 30 days.</div>
       </div>
       <div class="check-item">
-        <div class="check-icon">✓</div>
-        <div class="check-text"><strong>No behavioral profiling.</strong> We do not analyze your query patterns, matter types, or usage behavior for any commercial purpose.</div>
+        <div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text"><strong>No behavioral profiling.</strong> We do not mine your query patterns, matter types, or usage behavior for any commercial purpose.</div>
       </div>
     </div>
     <div class="blockquote">
@@ -461,12 +493,12 @@ footer a:hover{color:var(--gold)}
     <div class="sec-num">03</div>
     <h2>Powered by Anthropic —<br><em>enterprise-grade</em> infrastructure.</h2>
     <div class="sec-divider"></div>
-    <p>ThemisOS runs on Anthropic's Claude API — one of the most rigorously safety-focused AI systems available. This means your documents benefit from two independent layers of protection: ThemisOS's own zero-retention architecture, and Anthropic's contractual commitment not to train on API data.</p>
+    <p>ThemisOS runs on Anthropic's Claude API — one of the most rigorously safety-focused AI systems available. This means your documents benefit from two independent layers of protection: ThemisOS's own architecture, which discards uploads after analysis, and Anthropic's contractual commitment not to train on API data.</p>
     <div class="anthropic-callout">
       <div class="ac-label">Anthropic API Data Policy</div>
-      <p>Under Anthropic's standard API terms, data submitted through the API is not used to train or improve Anthropic's models. Anthropic maintains enterprise-grade infrastructure with encryption in transit and at rest. You can review their policy directly at <a href="https://www.anthropic.com/legal/privacy" target="_blank">anthropic.com/legal/privacy →</a></p>
+      <p>Under Anthropic's standard commercial API terms, data submitted through the API is not used to train or improve Anthropic's models and is deleted from Anthropic's systems within 30 days. Anthropic maintains enterprise-grade infrastructure with encryption in transit and at rest. You can review their policy directly at <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">anthropic.com/legal/privacy →</a></p>
     </div>
-    <p>This two-layer structure — our architecture plus Anthropic's contractual guarantees — provides stronger protection than most general-purpose legal research tools currently on the market. Unlike consumer AI products, API usage is governed by explicit data processing terms, not general privacy policies written for mass audiences.</p>
+    <p>This two-layer structure — our architecture plus Anthropic's contractual guarantees — provides stronger protection than most general-purpose research tools currently on the market. Unlike consumer AI products, API usage is governed by explicit data processing terms, not general privacy policies written for mass audiences.</p>
 
     <p style="font-family:var(--font-ui);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin:2rem 0 0.75rem;">How your data moves</p>
     <table class="flow-table">
@@ -474,13 +506,15 @@ footer a:hover{color:var(--gold)}
         <tr><th>Step</th><th>What happens</th></tr>
       </thead>
       <tbody>
-        <tr><td>Upload</td><td>Your PDF is transmitted over encrypted HTTPS to our processing backend. It is never written to disk.</td></tr>
-        <tr><td>Extraction</td><td>Text is extracted from the document in memory using our pipeline, then sent to the Anthropic API for analysis.</td></tr>
-        <tr><td>Analysis</td><td>Anthropic's Claude model processes the text and returns results. Your data is not used for model training under Anthropic's API terms.</td></tr>
-        <tr><td>Delivery</td><td>Results are returned to your browser session. No copy is retained on our end.</td></tr>
-        <tr><td>Session end</td><td>All in-memory data is cleared. Nothing is logged, cached, or recoverable after you close the session.</td></tr>
+        <tr><td>Upload</td><td>Your file is transmitted over an encrypted (TLS) connection to our processing backend.</td></tr>
+        <tr><td>Extraction</td><td>Text is extracted from the document in memory, then sent to the Anthropic API for analysis.</td></tr>
+        <tr><td>Analysis</td><td>Anthropic's Claude model processes the text and returns results. Under Anthropic's commercial API terms, your data is not used for model training and is deleted within 30 days.</td></tr>
+        <tr><td>Delivery</td><td>Results are returned to you and saved to your firm's workspace so you can revisit them.</td></tr>
+        <tr><td>Cleanup</td><td>The uploaded document is discarded from memory — no copy of your original file is stored. Saved results remain available until you request their deletion.</td></tr>
       </tbody>
     </table>
+
+    <p class="sub-note">Beyond Anthropic, ThemisOS relies on a small set of infrastructure subprocessors for hosting, database, billing, and email. The complete list — along with our full data-retention terms — is set out in our <a href="https://platform.themisos.ai/privacy">Privacy Policy</a>.</p>
   </div>
 
   <!-- SECTION 04 -->
@@ -490,13 +524,13 @@ footer a:hover{color:var(--gold)}
     <div class="sec-divider"></div>
     <p>Some commitments are best stated plainly. Here is an explicit list of things ThemisOS does not do — not as a matter of policy preference, but as a hard constraint on how this platform operates.</p>
     <div class="x-list">
-      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Sell, rent, license, or transfer your data or document contents to any third party</div></div>
-      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Use your documents to train, fine-tune, or benchmark any AI model</div></div>
-      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Retain document content after a session ends without explicit written agreement</div></div>
-      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Reference, summarize, or disclose your matter in any public or marketing context</div></div>
-      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Contact your clients or opposing parties for any reason</div></div>
-      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Use tracking pixels, analytics scripts, or cookies on this website</div></div>
-      <div class="x-item"><div class="x-icon">✕</div><div class="x-text">Provide your contact information to any sales list or third-party service</div></div>
+      <div class="x-item"><div class="x-icon"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div><div class="x-text">Sell, rent, license, or transfer your data or document contents to any third party</div></div>
+      <div class="x-item"><div class="x-icon"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div><div class="x-text">Use your documents to train, fine-tune, or benchmark any AI model</div></div>
+      <div class="x-item"><div class="x-icon"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div><div class="x-text">Retain your uploaded documents after the analysis completes</div></div>
+      <div class="x-item"><div class="x-icon"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div><div class="x-text">Reference, summarize, or disclose your matter in any public or marketing context</div></div>
+      <div class="x-item"><div class="x-icon"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div><div class="x-text">Contact your clients or opposing parties for any reason</div></div>
+      <div class="x-item"><div class="x-icon"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div><div class="x-text">Build advertising or behavioral profiles from your activity</div></div>
+      <div class="x-item"><div class="x-icon"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div><div class="x-text">Provide your contact information to any sales list or third-party service</div></div>
     </div>
   </div>
 
@@ -505,11 +539,11 @@ footer a:hover{color:var(--gold)}
     <div class="sec-num">05</div>
     <h2>Request a written<br><em>data handling agreement.</em></h2>
     <div class="sec-divider"></div>
-    <p>If your firm requires a formal data handling or confidentiality agreement before use, we'll provide one. Most clients receive a signed engagement letter within one business day. The letter covers data processing scope, deletion commitments, privilege protections, and ThemisOS's obligations as a service provider to your firm.</p>
+    <p>If your firm requires a formal data handling or confidentiality agreement before use, we'll provide one. Most firms receive a signed engagement letter within one business day. The letter covers data processing scope, deletion commitments, privilege protections, and ThemisOS's obligations as a service provider to your firm.</p>
     <div class="blockquote">
       <p>We welcome written agreements. They protect you, and they hold us to the standard we already operate by.</p>
     </div>
-    <p>To request an agreement or ask any questions about our data practices, email us directly at <a href="mailto:beckett@themisos.ai" style="color:var(--gold);text-decoration:underline;text-underline-offset:3px">beckett@themisos.ai</a>. No forms, no sales process — just a direct conversation.</p>
+    <p>To request an agreement or ask any questions about our data practices, email us directly at <a href="mailto:legal@themisos.ai" style="color:var(--gold);text-decoration:underline;text-underline-offset:3px">legal@themisos.ai</a>. No forms, no sales process — just a direct conversation.</p>
   </div>
 
   <!-- CTA -->
@@ -517,8 +551,8 @@ footer a:hover{color:var(--gold)}
     <h3>Questions about<br><em>data handling?</em></h3>
     <p>Reach out directly. We'll respond within one business day and can provide a written agreement, answer specific questions about our infrastructure, or walk through how the platform handles your firm's documents.</p>
     <div class="cta-buttons">
-      <a href="mailto:beckett@themisos.ai?subject=Data Handling Agreement Request" class="btn-primary">Request Agreement</a>
-      <a href="mailto:beckett@themisos.ai" class="btn-secondary">Ask a Question</a>
+      <a href="mailto:legal@themisos.ai?subject=Data Handling Agreement Request" class="btn-primary">Request Agreement</a>
+      <a href="mailto:legal@themisos.ai" class="btn-secondary">Ask a Question</a>
       <a href="index.html" class="btn-secondary">Back to Home</a>
     </div>
   </div>
@@ -527,8 +561,8 @@ footer a:hover{color:var(--gold)}
 
 <!-- FOOTER -->
 <footer>
-  <span>© 2025 ThemisOS — All rights reserved</span>
-  <span><a href="index.html">Home</a> &nbsp;·&nbsp; <a href="mailto:beckett@themisos.ai">beckett@themisos.ai</a></span>
+  <span>© 2026 ThemisOS LLC — All rights reserved</span>
+  <span class="footer-links"><a href="index.html">Home</a> &nbsp;·&nbsp; <a href="https://platform.themisos.ai/privacy">Privacy</a> &nbsp;·&nbsp; <a href="https://platform.themisos.ai/terms">Terms</a> &nbsp;·&nbsp; <a href="mailto:legal@themisos.ai">legal@themisos.ai</a></span>
 </footer>
 
 </body>
