@@ -1702,6 +1702,379 @@ async def invite_client(req: InviteRequest):
         )
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Firm / team management  (org-scoped; authz via the caller's Supabase JWT)
+# ─────────────────────────────────────────────────────────────────────────────
+# Cases key off user_id with no firm column, and these endpoints use the service
+# role (which bypasses RLS) — so each one authenticates the caller by their
+# Supabase access token and derives the firm + role from the caller's own
+# profile. The frontend must send:
+#     Authorization: Bearer <supabase session access_token>
+# Endpoints:
+#   POST /invite-member  -> owner/manager invites an attorney to their firm (seat-checked)
+#   GET  /firm-stats     -> firm-wide active cases / documents / recovery (members + managers)
+#   GET  /firm-cases     -> every case across the firm (managers only)
+#   GET  /firm-members   -> the firm's member list + seat usage (managers only)
+#   POST /remove-member  -> detach a member (clear org, suspend) — never a hard delete
+
+MANAGER_ROLES = {"owner", "billing_admin", "admin"}
+
+
+def _sb_url():
+    return os.environ.get("SUPABASE_URL")
+
+
+def _sb_key():
+    return os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+
+
+def _sb_headers():
+    key = _sb_key()
+    return {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+    }
+
+
+async def _verify_user_id(client, authorization: Optional[str]) -> Optional[str]:
+    """Return the authenticated user's id from their Supabase access token, or
+    None. Identity comes from a verified token — never from a spoofable body
+    field — because these endpoints run with the service role."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    token = authorization.split(" ", 1)[1].strip()
+    if not token:
+        return None
+    r = await client.get(
+        f"{_sb_url()}/auth/v1/user",
+        headers={"apikey": _sb_key(), "Authorization": f"Bearer {token}"},
+    )
+    if r.status_code != 200:
+        return None
+    return (r.json() or {}).get("id")
+
+
+async def _fetch_profile(client, user_id: str) -> Optional[dict]:
+    r = await client.get(
+        f"{_sb_url()}/rest/v1/profiles?id=eq.{user_id}"
+        f"&select=id,organization_id,role,full_name,account_status",
+        headers=_sb_headers(),
+    )
+    rows = r.json() if r.status_code == 200 else []
+    return rows[0] if isinstance(rows, list) and rows else None
+
+
+async def _fetch_org(client, org_id: str) -> Optional[dict]:
+    r = await client.get(
+        f"{_sb_url()}/rest/v1/organizations?id=eq.{org_id}"
+        f"&select=id,name,seats_allowed,subscription_status,billing_owner_id",
+        headers=_sb_headers(),
+    )
+    rows = r.json() if r.status_code == 200 else []
+    return rows[0] if isinstance(rows, list) and rows else None
+
+
+async def _org_profiles(client, org_id: str) -> list:
+    r = await client.get(
+        f"{_sb_url()}/rest/v1/profiles?organization_id=eq.{org_id}"
+        f"&select=id,role,full_name,account_status",
+        headers=_sb_headers(),
+    )
+    rows = r.json() if r.status_code == 200 else []
+    return rows if isinstance(rows, list) else []
+
+
+async def _admin_users_by_id(client) -> dict:
+    """Map user_id -> auth user object (for email + confirmation state)."""
+    r = await client.get(
+        f"{_sb_url()}/auth/v1/admin/users?per_page=1000",
+        headers=_sb_headers(),
+    )
+    users = (r.json() or {}).get("users", []) if r.status_code == 200 else []
+    return {u.get("id"): u for u in users}
+
+
+def _active_members(members: list) -> list:
+    return [m for m in members if (m.get("account_status") or "active") != "suspended"]
+
+
+class InviteMemberRequest(BaseModel):
+    member_email: str
+    member_name: Optional[str] = None
+
+
+@app.post("/invite-member")
+async def invite_member(req: InviteMemberRequest, authorization: Optional[str] = Header(default=None)):
+    if not _sb_url() or not _sb_key():
+        return JSONResponse(status_code=500, content={"error": "Supabase credentials not configured."})
+
+    email = (req.member_email or "").strip().lower()
+    if not email:
+        return JSONResponse(status_code=400, content={"error": "member_email is required."})
+
+    async with httpx.AsyncClient() as client:
+        caller_id = await _verify_user_id(client, authorization)
+        if not caller_id:
+            return JSONResponse(status_code=401, content={"error": "Not authenticated."})
+
+        inviter = await _fetch_profile(client, caller_id)
+        if not inviter:
+            return JSONResponse(status_code=404, content={"error": "Your profile was not found."})
+        if (inviter.get("role") or "") not in MANAGER_ROLES:
+            return JSONResponse(status_code=403, content={"error": "Only a firm owner or manager can invite members."})
+        org_id = inviter.get("organization_id")
+        if not org_id:
+            return JSONResponse(status_code=400, content={"error": "You are not attached to a firm."})
+
+        org = await _fetch_org(client, org_id)
+        if not org:
+            return JSONResponse(status_code=404, content={"error": "Firm not found."})
+
+        members = await _org_profiles(client, org_id)
+        used = len(_active_members(members))
+        seats_allowed = org.get("seats_allowed")
+        seat_warning = None
+        if seats_allowed:
+            if used >= int(seats_allowed):
+                return JSONResponse(status_code=409, content={
+                    "error": f"Seat limit reached ({used}/{int(seats_allowed)}). Remove a member or add seats.",
+                    "seats_used": used,
+                    "seats_allowed": int(seats_allowed),
+                })
+        else:
+            seat_warning = "No seat limit is set for this firm yet — invite allowed without enforcement."
+
+        invite_data = {"organization_id": org_id, "role": "member"}
+        if req.member_name:
+            invite_data["full_name"] = req.member_name
+        if org.get("name"):
+            invite_data["firm_name"] = org.get("name")
+
+        inv = await client.post(
+            f"{_sb_url()}/auth/v1/invite",
+            headers=_sb_headers(),
+            json={
+                "email": email,
+                "data": invite_data,
+                "redirect_to": "https://platform.themisos.ai/auth/confirm",
+            },
+        )
+        if inv.status_code not in (200, 201):
+            msg = "This email may already have an account." if inv.status_code in (400, 422) else "Invite failed."
+            return JSONResponse(status_code=inv.status_code, content={"error": msg, "detail": inv.text})
+
+        member = inv.json() or {}
+        member_id = member.get("id")
+        if not member_id:
+            return JSONResponse(status_code=502, content={"error": "Invite sent but no user id was returned."})
+
+        profile = {
+            "id": member_id,
+            "organization_id": org_id,
+            "role": "member",
+            "account_status": "active",
+        }
+        if req.member_name:
+            profile["full_name"] = req.member_name
+
+        pr = await client.post(
+            f"{_sb_url()}/rest/v1/profiles",
+            headers={**_sb_headers(), "Prefer": "resolution=merge-duplicates"},
+            json=profile,
+        )
+        profile_error = None
+        if pr.status_code not in (200, 201, 204):
+            profile_error = f"member invited but profile link failed ({pr.status_code}): {pr.text}"
+
+    return JSONResponse(content={
+        "success": True,
+        "member_id": member_id,
+        "member_email": email,
+        "seats_used": used + 1,
+        "seats_allowed": int(seats_allowed) if seats_allowed else None,
+        "seat_warning": seat_warning,
+        "profile_error": profile_error,
+    })
+
+
+@app.get("/firm-stats")
+async def firm_stats(authorization: Optional[str] = Header(default=None)):
+    if not _sb_url() or not _sb_key():
+        return JSONResponse(status_code=500, content={"error": "Supabase credentials not configured."})
+    async with httpx.AsyncClient() as client:
+        caller_id = await _verify_user_id(client, authorization)
+        if not caller_id:
+            return JSONResponse(status_code=401, content={"error": "Not authenticated."})
+
+        profile = await _fetch_profile(client, caller_id)
+        empty = {
+            "active_cases": 0, "total_documents": 0, "total_recovery": 0,
+            "member_count": 0, "seats_allowed": None, "organization_id": None,
+        }
+        if not profile or not profile.get("organization_id"):
+            return JSONResponse(content=empty)
+
+        org_id = profile["organization_id"]
+        org = await _fetch_org(client, org_id)
+        members = await _org_profiles(client, org_id)
+        member_ids = [m["id"] for m in members if m.get("id")]
+
+        active_cases = total_documents = total_recovery = 0
+        if member_ids:
+            ids = ",".join(member_ids)
+            cr = await client.get(
+                f"{_sb_url()}/rest/v1/cases?user_id=in.({ids})"
+                f"&select=status,documents_analyzed,recovery_identified",
+                headers=_sb_headers(),
+            )
+            cases = cr.json() if cr.status_code == 200 else []
+            if isinstance(cases, list):
+                # No close-case flow exists yet, so every case in the firm counts
+                # as active. If a "closed"/"archived" status is added later, filter
+                # here. float() guards against PostgREST returning numeric columns
+                # as strings (e.g. "1840.00").
+                active_cases = len(cases)
+                for c in cases:
+                    total_documents += int(float(c.get("documents_analyzed") or 0))
+                    total_recovery += int(float(c.get("recovery_identified") or 0))
+
+        return JSONResponse(content={
+            "active_cases": active_cases,
+            "total_documents": total_documents,
+            "total_recovery": total_recovery,
+            "member_count": len(_active_members(members)),
+            "seats_allowed": int(org["seats_allowed"]) if org and org.get("seats_allowed") else None,
+            "organization_id": org_id,
+        })
+
+
+@app.get("/firm-cases")
+async def firm_cases(authorization: Optional[str] = Header(default=None)):
+    if not _sb_url() or not _sb_key():
+        return JSONResponse(status_code=500, content={"error": "Supabase credentials not configured."})
+    async with httpx.AsyncClient() as client:
+        caller_id = await _verify_user_id(client, authorization)
+        if not caller_id:
+            return JSONResponse(status_code=401, content={"error": "Not authenticated."})
+
+        profile = await _fetch_profile(client, caller_id)
+        if not profile or not profile.get("organization_id"):
+            return JSONResponse(content={"cases": []})
+        if (profile.get("role") or "") not in MANAGER_ROLES:
+            return JSONResponse(status_code=403, content={"error": "Only a firm owner or manager can view all firm cases."})
+
+        org_id = profile["organization_id"]
+        members = await _org_profiles(client, org_id)
+        member_ids = [m["id"] for m in members if m.get("id")]
+        prof_name = {m["id"]: m.get("full_name") for m in members}
+
+        cases = []
+        if member_ids:
+            ids = ",".join(member_ids)
+            cr = await client.get(
+                f"{_sb_url()}/rest/v1/cases?user_id=in.({ids})"
+                f"&select=id,name,claimant,status,documents_analyzed,recovery_identified,"
+                f"created_at,user_id,last_analysis,last_examine,last_document_analysis"
+                f"&order=created_at.desc",
+                headers=_sb_headers(),
+            )
+            cases = cr.json() if cr.status_code == 200 else []
+            if not isinstance(cases, list):
+                cases = []
+
+        users = await _admin_users_by_id(client)
+        for c in cases:
+            uid = c.get("user_id")
+            c["owner_email"] = (users.get(uid) or {}).get("email", "")
+            c["owner_name"] = prof_name.get(uid) or c["owner_email"]
+
+        return JSONResponse(content={"cases": cases})
+
+
+@app.get("/firm-members")
+async def firm_members(authorization: Optional[str] = Header(default=None)):
+    if not _sb_url() or not _sb_key():
+        return JSONResponse(status_code=500, content={"error": "Supabase credentials not configured."})
+    async with httpx.AsyncClient() as client:
+        caller_id = await _verify_user_id(client, authorization)
+        if not caller_id:
+            return JSONResponse(status_code=401, content={"error": "Not authenticated."})
+
+        profile = await _fetch_profile(client, caller_id)
+        if not profile or not profile.get("organization_id"):
+            return JSONResponse(content={"members": [], "seats_used": 0, "seats_allowed": None, "firm_name": ""})
+        if (profile.get("role") or "") not in MANAGER_ROLES:
+            return JSONResponse(status_code=403, content={"error": "Only a firm owner or manager can view the team."})
+
+        org_id = profile["organization_id"]
+        org = await _fetch_org(client, org_id)
+        members = await _org_profiles(client, org_id)
+        users = await _admin_users_by_id(client)
+
+        role_rank = {"owner": 0, "billing_admin": 1, "admin": 2, "member": 3, "viewer": 4}
+        out = []
+        for m in members:
+            u = users.get(m["id"], {})
+            confirmed = bool(u.get("email_confirmed_at") or u.get("confirmed_at") or u.get("last_sign_in_at"))
+            if (m.get("account_status") or "active") == "suspended":
+                status = "suspended"
+            else:
+                status = "active" if confirmed else "invited"
+            out.append({
+                "id": m["id"],
+                "email": u.get("email", ""),
+                "full_name": m.get("full_name") or (u.get("user_metadata") or {}).get("full_name") or "",
+                "role": m.get("role") or "member",
+                "status": status,
+            })
+        out.sort(key=lambda x: (role_rank.get(x["role"], 9), x["email"]))
+
+        return JSONResponse(content={
+            "members": out,
+            "seats_used": len(_active_members(members)),
+            "seats_allowed": int(org["seats_allowed"]) if org and org.get("seats_allowed") else None,
+            "firm_name": org.get("name") if org else "",
+        })
+
+
+class RemoveMemberRequest(BaseModel):
+    member_id: str
+
+
+@app.post("/remove-member")
+async def remove_member(req: RemoveMemberRequest, authorization: Optional[str] = Header(default=None)):
+    if not _sb_url() or not _sb_key():
+        return JSONResponse(status_code=500, content={"error": "Supabase credentials not configured."})
+    async with httpx.AsyncClient() as client:
+        caller_id = await _verify_user_id(client, authorization)
+        if not caller_id:
+            return JSONResponse(status_code=401, content={"error": "Not authenticated."})
+
+        requester = await _fetch_profile(client, caller_id)
+        if not requester or (requester.get("role") or "") not in MANAGER_ROLES:
+            return JSONResponse(status_code=403, content={"error": "Only a firm owner or manager can remove members."})
+        org_id = requester.get("organization_id")
+
+        target = await _fetch_profile(client, req.member_id)
+        if not target or target.get("organization_id") != org_id:
+            return JSONResponse(status_code=404, content={"error": "That member is not part of your firm."})
+        if req.member_id == caller_id:
+            return JSONResponse(status_code=400, content={"error": "You cannot remove yourself."})
+        if (target.get("role") or "") == "owner":
+            return JSONResponse(status_code=400, content={"error": "The firm owner cannot be removed."})
+
+        pr = await client.patch(
+            f"{_sb_url()}/rest/v1/profiles?id=eq.{req.member_id}",
+            headers={**_sb_headers(), "Prefer": "return=representation"},
+            json={"organization_id": None, "account_status": "suspended"},
+        )
+        if pr.status_code not in (200, 204):
+            return JSONResponse(status_code=502, content={"error": "Could not remove member.", "detail": pr.text})
+
+        return JSONResponse(content={"success": True, "member_id": req.member_id})
+
+
 @app.get("/health")
 async def health():
     return {
