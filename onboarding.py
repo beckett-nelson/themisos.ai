@@ -360,7 +360,9 @@ async def onboard_firm(req: OnboardFirmRequest):
                 session = stripe.checkout.Session.create(
                     **base_args, allow_promotion_codes=True
                 )
-        except stripe.error.InvalidRequestError:
+        except stripe.error.InvalidRequestError as e:
+            # TEMP DEBUG — surface the real Stripe error instead of swallowing it
+            print(f"[onboard-firm] coupon '{coupon_id}' rejected by Stripe: {e}")
             # coupon doesn't exist yet — fall back to no discount so onboarding still works
             session = stripe.checkout.Session.create(
                 **base_args, allow_promotion_codes=True
