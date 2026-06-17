@@ -203,6 +203,60 @@ async def send_activation_email(req: ActivationEmailRequest):
 # One-shot: onboard a firm (pick tier + discount, create checkout, email it)
 # ─────────────────────────────────────────────────────────────────────────────
 
+async def _invite_and_link_owner(org_id, owner_email, owner_name=None):
+    """Supabase-invite the firm owner and link their profile to the org as
+    'owner'. Non-fatal: returns (user_id, error) so onboarding still completes
+    even if this step needs a retry."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        return None, "Supabase creds not set."
+    headers = {
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+        "Content-Type": "application/json",
+    }
+    invite_data = {"organization_id": org_id, "role": "owner"}
+    if owner_name:
+        invite_data["full_name"] = owner_name
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.post(
+                f"{SUPABASE_URL}/auth/v1/invite",
+                headers=headers,
+                json={
+                    "email": owner_email,
+                    "data": invite_data,
+                    "redirect_to": "https://platform.themisos.ai/auth/confirm",
+                },
+            )
+        if r.status_code not in (200, 201):
+            return None, f"invite failed ({r.status_code}): {r.text}"
+        user_id = (r.json() or {}).get("id")
+        if not user_id:
+            return None, "invite returned no user id."
+
+        profile = {
+            "id": user_id,
+            "organization_id": org_id,
+            "role": "owner",
+            "account_status": "active",
+        }
+        if owner_name:
+            profile["full_name"] = owner_name
+        async with httpx.AsyncClient() as client:
+            pr = await client.post(
+                f"{SUPABASE_URL}/rest/v1/profiles",
+                headers={**headers, "Prefer": "resolution=merge-duplicates"},
+                json=profile,
+            )
+        if pr.status_code not in (200, 201, 204):
+            return user_id, f"owner invited but profile link failed ({pr.status_code}): {pr.text}"
+
+        await _patch_org(org_id, {"billing_owner_id": user_id})
+        return user_id, None
+    except Exception as e:
+        return None, f"{type(e).__name__}: {e}"
+
+
 class OnboardFirmRequest(BaseModel):
     organization_id: Optional[str] = None
     owner_email: str
@@ -223,6 +277,9 @@ async def onboard_firm(req: OnboardFirmRequest):
         return JSONResponse(status_code=500,
                             content={"error": f"Stripe price for tier {req.tier} not configured."})
 
+    owner_user_id = None
+    owner_invite_error = None
+
     # No organization_id -> create the firm row first (admin form has no pre-step).
     if req.organization_id:
         org_id = req.organization_id
@@ -237,6 +294,9 @@ async def onboard_firm(req: OnboardFirmRequest):
         org_id = org.get("id")
         if not org_id:
             return JSONResponse(status_code=500, content={"error": "Firm created but no id returned."})
+        owner_user_id, owner_invite_error = await _invite_and_link_owner(
+            org_id, req.owner_email, req.owner_name
+        )
 
     seats = max(1, int(req.seats or 1))
     coupon_id, pct, band = _band_for_seats(seats)
@@ -321,4 +381,6 @@ async def onboard_firm(req: OnboardFirmRequest):
         "monthly_total": monthly_total,
         "emailed": emailed,
         "email_error": email_error,
+        "owner_linked": bool(owner_user_id),
+        "owner_invite_error": owner_invite_error,
     })

@@ -45,7 +45,12 @@ export default function DashboardPage() {
       if (!user) { router.push('/login'); return }
       setUserEmail(user.email || '')
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
-      if (profile?.full_name) setUserName(profile.full_name.split(' ')[0])
+      if (profile?.full_name) {
+        setUserName(profile.full_name.split(' ')[0])
+      } else if (user.email) {
+        const prefix = user.email.split('@')[0]
+        setUserName(prefix.charAt(0).toUpperCase() + prefix.slice(1))
+      }
       const { data: casesData } = await supabase
         .from('cases')
         .select('id, name, claimant, status, documents_analyzed, recovery_identified, created_at, last_analysis, last_examine, last_document_analysis')
