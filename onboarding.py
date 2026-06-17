@@ -18,6 +18,10 @@ Env vars:
 Firm-size discount coupons (create these in Stripe with these exact IDs for discounts to apply):
   SIZE_5_9 = 6%,  SIZE_10_19 = 10%,  SIZE_20_49 = 16%,  SIZE_50 = 22%
   (1-4 seats: no discount. If a coupon is missing, onboarding still works — it just skips the %.)
+
+Manual discount overrides (set via the admin form's "Discount" dropdown; these
+REPLACE the size-band coupon — Stripe allows only one coupon per subscription):
+  INTERNAL_100 = 100%,  MARKETING_5 = 5%
 """
 
 import os
@@ -42,6 +46,16 @@ PLATFORM_URL = "https://platform.themisos.ai"
 TIER_META = {
     "20": {"label": "20 Cases / month", "rate": "$50",  "base": 50},
     "50": {"label": "50 Cases / month", "rate": "$100", "base": 100},
+}
+
+# Manual discount overrides — chosen explicitly in the admin form's "Discount"
+# dropdown. These REPLACE the size-band coupon (Stripe allows only one coupon
+# per subscription). Key = the `coupon` value sent from the frontend, which
+# matches the Stripe coupon ID exactly.
+#   value -> (stripe_coupon_id, pct, label)
+MANUAL_DISCOUNTS = {
+    "INTERNAL_100": ("INTERNAL_100", 100, "Internal (100% off)"),
+    "MARKETING_5": ("MARKETING_5", 5, "Marketing partner (5% off)"),
 }
 
 
@@ -265,6 +279,7 @@ class OnboardFirmRequest(BaseModel):
     tier: str = "20"               # "20" or "50"
     owner_name: Optional[str] = None
     send_email: bool = True        # set false to just get the checkout URL back
+    coupon: Optional[str] = None   # manual override, e.g. "INTERNAL_100" — replaces size band
 
 
 @router.post("/onboard-firm")
@@ -302,10 +317,15 @@ async def onboard_firm(req: OnboardFirmRequest):
     coupon_id, pct, band = _band_for_seats(seats)
     meta = TIER_META[req.tier]
 
+    # A manual discount (from the admin form's dropdown) overrides the
+    # automatic size-band coupon — Stripe allows only one coupon per subscription.
+    if req.coupon and req.coupon in MANUAL_DISCOUNTS:
+        coupon_id, pct, band = MANUAL_DISCOUNTS[req.coupon]
+
     # compute the monthly total exactly as Stripe will charge it
     total = meta["base"] * seats * (100 - pct) / 100
     monthly_total = f"${total:,.2f}"
-    discount_label = f"-{pct}% (firm size {band})" if pct else None
+    discount_label = f"-{pct}% ({band})" if pct else None
 
     try:
         # reuse or create the firm's Stripe customer
@@ -348,6 +368,7 @@ async def onboard_firm(req: OnboardFirmRequest):
             total = meta["base"] * seats
             monthly_total = f"${total:,.2f}"
             discount_label = None
+            discount_applied = False
 
     except stripe.error.StripeError as e:
         return JSONResponse(status_code=502, content={"error": str(e)})
