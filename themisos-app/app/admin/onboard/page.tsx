@@ -13,7 +13,7 @@ import { useMemo, useState } from 'react';
  *
  * ASSUMPTIONS (confirm against onboarding.py request model, then tweak if needed):
  *   - API base: NEXT_PUBLIC_API_BASE, falling back to https://app.themisos.ai
- *   - Request keys: firm_name, owner_name, owner_email, seats, tier
+ *   - Request keys: firm_name, owner_name, owner_email, seats, tier, coupon
  *   - tier value is the case cap as a string: "20" or "50"
  *   - Response: { checkout_url, monthly_total, discount_applied, emailed }
  *   - This page lives under your existing /admin gate (no auth added here)
@@ -30,6 +30,14 @@ const BANDS = [
   { min: 10, max: 19, pct: 10, label: '10–19 seats', coupon: 'SIZE_10_19' },
   { min: 20, max: 49, pct: 16, label: '20–49 seats', coupon: 'SIZE_20_49' },
   { min: 50, max: Infinity, pct: 22, label: '50+ seats', coupon: 'SIZE_50' },
+];
+
+// Manual discount overrides. These REPLACE the size band (Stripe allows one
+// coupon per subscription). value must match the Stripe coupon ID exactly.
+const DISCOUNTS = [
+  { value: '', label: 'None — standard size pricing', coupon: null, pct: 0 },
+  { value: 'INTERNAL_100', label: 'Internal — 100% off (free)', coupon: 'INTERNAL_100', pct: 100 },
+  { value: 'MARKETING_5', label: 'Marketing partner — 5% off', coupon: 'MARKETING_5', pct: 5 },
 ];
 
 const TIERS = [
@@ -57,6 +65,7 @@ export default function OnboardFirmPage() {
   const [ownerEmail, setOwnerEmail] = useState('');
   const [seats, setSeats] = useState(5);
   const [tier, setTier] = useState('20');
+  const [discount, setDiscount] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,9 +76,13 @@ export default function OnboardFirmPage() {
     const s = Number.isFinite(seats) && seats > 0 ? seats : 0;
     const base = TIERS.find((t) => t.value === tier)?.base ?? 50;
     const band = bandFor(s || 1);
-    const perSeat = base * (1 - band.pct / 100);
-    return { band, perSeat, monthly: perSeat * s, full: base };
-  }, [seats, tier]);
+    const override = DISCOUNTS.find((d) => d.value === discount) ?? DISCOUNTS[0];
+    const usingOverride = !!override.coupon;
+    const pct = usingOverride ? override.pct : band.pct;
+    const effectiveCoupon = usingOverride ? override.coupon : band.coupon;
+    const perSeat = base * (1 - pct / 100);
+    return { band, override, usingOverride, pct, effectiveCoupon, perSeat, monthly: perSeat * s, full: base };
+  }, [seats, tier, discount]);
 
   const canSubmit =
     firmName.trim() && ownerName.trim() && ownerEmail.trim() && seats >= 1 && !submitting;
@@ -95,6 +108,7 @@ export default function OnboardFirmPage() {
           owner_email: ownerEmail.trim(),
           seats,
           tier,
+          coupon: discount || null,
           // organization_id intentionally omitted — endpoint creates the org.
         }),
       });
@@ -214,6 +228,21 @@ export default function OnboardFirmPage() {
             </label>
           </div>
 
+          <label className="onb__field">
+            <span className="onb__label">Discount (optional)</span>
+            <select
+              className="onb__input onb__select"
+              value={discount}
+              onChange={(e) => setDiscount(e.target.value)}
+            >
+              {DISCOUNTS.map((d) => (
+                <option key={d.value || 'none'} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <button className="onb__cta" onClick={onboard} disabled={!canSubmit}>
             {submitting ? 'Onboarding…' : 'Onboard firm'}
           </button>
@@ -234,17 +263,20 @@ export default function OnboardFirmPage() {
 
           <dl className="onb__stats">
             <div>
-              <dt>Size band</dt>
+              <dt>Discount</dt>
               <dd>
-                {preview.band.label}
-                {preview.band.pct > 0 ? ` · ${preview.band.pct}% off` : ' · no discount'}
+                {preview.usingOverride
+                  ? preview.override.label
+                  : preview.band.pct > 0
+                  ? `${preview.band.label} · ${preview.band.pct}% off`
+                  : 'None'}
               </dd>
             </div>
             <div>
               <dt>Full rate</dt>
               <dd>
                 {usd(preview.full)} / seat
-                {preview.band.coupon ? ` · coupon ${preview.band.coupon}` : ''}
+                {preview.effectiveCoupon ? ` · coupon ${preview.effectiveCoupon}` : ''}
               </dd>
             </div>
             <div>
@@ -254,8 +286,9 @@ export default function OnboardFirmPage() {
           </dl>
 
           <p className="onb__note">
-            Stripe applies the size coupon, so the charged amount is the source of truth.
-            This mirrors that math.
+            {preview.usingOverride
+              ? 'A chosen discount replaces the automatic size coupon — Stripe allows one coupon per subscription. The charged amount in Stripe is the source of truth.'
+              : 'Stripe applies the size coupon, so the charged amount is the source of truth. This mirrors that math.'}
           </p>
         </aside>
       </div>
