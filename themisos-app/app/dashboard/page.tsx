@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 const ADMIN_EMAIL = 'beckett@themisos.ai'
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://app.themisos.ai'
 
 type Case = {
   id: string
@@ -72,6 +73,25 @@ export default function DashboardPage() {
     router.push('/login')
   }
 
+  const handleManageBilling = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    try {
+      const res = await fetch(`${API_BASE}/billing-portal`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.url) {
+        window.location.href = data.url
+      } else {
+        alert(data.error || 'Could not open the billing portal.')
+      }
+    } catch {
+      alert('Could not open the billing portal. Please try again.')
+    }
+  }
+
   const toggleStatus = async (c: Case) => {
     const newStatus = c.status === 'active' ? 'inactive' : 'active'
     await supabase.from('cases').update({ status: newStatus }).eq('id', c.id)
@@ -94,7 +114,6 @@ export default function DashboardPage() {
       ]
     : isManager
     ? [
-        { href: '/team', label: 'Invite Member', icon: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></> },
         { href: '/team', label: 'Members', icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></> },
       ]
     : []
@@ -399,6 +418,17 @@ export default function DashboardPage() {
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#1A2E4A'; (e.currentTarget as HTMLElement).style.color = '#6E7D94' }}
             >{link.label}</a>
           ))}
+          {isManager && (
+            <button onClick={handleManageBilling} style={{
+              background: 'transparent', border: 'none', padding: '8px 6px',
+              color: '#C9962B', fontSize: '11px', cursor: 'pointer',
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              fontFamily: "'Syne', sans-serif", transition: 'color 0.2s',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#E2B44A')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#C9962B')}
+            >Manage Billing</button>
+          )}
           <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#1A2E4A', fontFamily: "'Syne', sans-serif", letterSpacing: '0.06em' }}>
             ThemisOS is not legal counsel. Analysis is provided for attorney review only.
           </span>

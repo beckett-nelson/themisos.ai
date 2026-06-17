@@ -18,11 +18,12 @@ Env vars required (set in Railway):
 """
 
 import os
+import json
 from datetime import datetime, timezone
 
 import httpx
 import stripe
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Header
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -99,6 +100,24 @@ def _iso(ts: int | None) -> str | None:
     return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
 
 
+def _as_dict(obj) -> dict:
+    """Normalize a Stripe SDK object (or anything) into a plain dict so dict-style
+    .get() works regardless of the installed Stripe library version. Stripe
+    StripeObjects no longer expose a real dict .get(), so calling .get() on them
+    raises AttributeError('get'); convert first, then read."""
+    if isinstance(obj, dict):
+        return obj
+    if hasattr(obj, "to_dict_recursive"):
+        try:
+            return obj.to_dict_recursive()
+        except Exception:
+            pass
+    try:
+        return json.loads(str(obj))
+    except Exception:
+        return {}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 1) Create a Checkout Session — generate the firm owner's payment link
 # ─────────────────────────────────────────────────────────────────────────────
@@ -159,23 +178,31 @@ async def create_checkout_session(req: CheckoutRequest):
 # ─────────────────────────────────────────────────────────────────────────────
 
 async def _apply_subscription(sub: dict) -> None:
-    """Write a Stripe subscription object's state onto its organization row."""
+    """Write a Stripe subscription object's state onto its organization row.
+    `sub` MUST be a plain dict (see _as_dict) — never a raw StripeObject."""
     org_id = (sub.get("metadata") or {}).get("organization_id")
 
-    item = (sub.get("items", {}).get("data") or [{}])[0]
+    items = (sub.get("items") or {}).get("data") or []
+    item = items[0] if items else {}
     seats = item.get("quantity")
     sub_item_id = item.get("id")
     price = item.get("price") or {}
     price_id = price.get("id")
     case_cap = (price.get("metadata") or {}).get("case_cap")
 
+    # current_period_start/end moved from the subscription to the line item in
+    # recent Stripe API versions (2025-03 basil onward). Read from the item, then
+    # fall back to the subscription for older versions.
+    period_start = item.get("current_period_start") or sub.get("current_period_start")
+    period_end = item.get("current_period_end") or sub.get("current_period_end")
+
     fields = {
         "stripe_subscription_id": sub.get("id"),
         "stripe_subscription_item_id": sub_item_id,
         "stripe_price_id": price_id,
         "subscription_status": STATUS_MAP.get(sub.get("status"), "incomplete"),
-        "current_period_start": _iso(sub.get("current_period_start")),
-        "current_period_end": _iso(sub.get("current_period_end")),
+        "current_period_start": _iso(period_start),
+        "current_period_end": _iso(period_end),
     }
     if seats:
         fields["seats_allowed"] = seats
@@ -201,22 +228,27 @@ async def stripe_webhook(request: Request):
 
     payload = await request.body()
     sig = request.headers.get("stripe-signature")
+
+    # Verify the signature for security...
     try:
-        event = stripe.Webhook.construct_event(payload, sig, WEBHOOK_SECRET)
+        stripe.Webhook.construct_event(payload, sig, WEBHOOK_SECRET)
     except (ValueError, stripe.error.SignatureVerificationError):
         return JSONResponse(status_code=400, content={"error": "Invalid signature."})
 
-    etype = event["type"]
-    obj = event["data"]["object"]
+    # ...then read the event from the raw JSON so every .get() below is a real
+    # dict method, independent of the installed Stripe SDK's object wrappers.
+    event = json.loads(payload)
+    etype = event.get("type")
+    obj = (event.get("data") or {}).get("object") or {}
 
     try:
         if etype == "checkout.session.completed":
-            # First payment landed. The session points at the new subscription;
-            # retrieve it for the full item/status/period data, then apply.
+            # First payment landed. The session only carries the subscription id;
+            # retrieve the full subscription, normalize it to a dict, then apply.
             sub_id = obj.get("subscription")
             org_id = (obj.get("metadata") or {}).get("organization_id")
             if sub_id:
-                sub = stripe.Subscription.retrieve(sub_id)
+                sub = _as_dict(stripe.Subscription.retrieve(sub_id))
                 # ensure org_id is present even if it wasn't set on the subscription
                 if org_id and not (sub.get("metadata") or {}).get("organization_id"):
                     sub["metadata"] = {**(sub.get("metadata") or {}), "organization_id": org_id}
@@ -242,10 +274,87 @@ async def stripe_webhook(request: Request):
         # All other event types: acknowledged and ignored.
     except Exception as e:
         # Return 200 anyway on internal errors so Stripe doesn't hammer retries for a
-        # bug on our side; log for inspection. (Signature failures already returned 400.)
-        print(f"[stripe-webhook] handler error on {etype}: {e}")
+        # bug on our side; log the type + message for inspection.
+        print(f"[stripe-webhook] handler error on {etype}: {type(e).__name__}: {e}")
 
     return JSONResponse(content={"received": True})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3) Customer Portal — let a firm manage / cancel their own subscription
+# ─────────────────────────────────────────────────────────────────────────────
+# Returns a Stripe-hosted billing portal URL for the caller's firm. The frontend
+# redirects to it; cancellations there flow back through the webhook above and
+# flip subscription_status automatically. The caller is authenticated by their
+# Supabase access token (Authorization: Bearer ...); only firm managers qualify.
+#
+# NOTE: enable the Customer Portal once in Stripe (Settings -> Billing -> Customer
+# portal) or Session.create raises "No configuration provided".
+
+_MANAGER_ROLES = {"owner", "billing_admin", "admin"}
+
+
+async def _verify_user_id(client, authorization) -> str | None:
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    token = authorization.split(" ", 1)[1].strip()
+    if not token or not url or not key:
+        return None
+    r = await client.get(
+        f"{url}/auth/v1/user",
+        headers={"apikey": key, "Authorization": f"Bearer {token}"},
+    )
+    if r.status_code != 200:
+        return None
+    return (r.json() or {}).get("id")
+
+
+async def _get_profile(client, user_id: str) -> dict | None:
+    url, headers = _supabase()
+    if not url:
+        return None
+    r = await client.get(
+        f"{url}/rest/v1/profiles?id=eq.{user_id}&select=organization_id,role",
+        headers=headers,
+    )
+    rows = r.json() if r.status_code == 200 else []
+    return rows[0] if isinstance(rows, list) and rows else None
+
+
+@router.post("/billing-portal")
+async def billing_portal(authorization: str | None = Header(default=None)):
+    if not stripe.api_key:
+        return JSONResponse(status_code=500, content={"error": "Stripe not configured."})
+
+    async with httpx.AsyncClient() as client:
+        user_id = await _verify_user_id(client, authorization)
+        if not user_id:
+            return JSONResponse(status_code=401, content={"error": "Not authenticated."})
+
+        profile = await _get_profile(client, user_id)
+        if not profile or not profile.get("organization_id"):
+            return JSONResponse(status_code=400, content={"error": "No firm is associated with this account."})
+        if (profile.get("role") or "") not in _MANAGER_ROLES:
+            return JSONResponse(status_code=403, content={"error": "Only a firm owner or manager can manage billing."})
+
+        org = await _get_org(f"id=eq.{profile['organization_id']}")
+        customer_id = (org or {}).get("stripe_customer_id")
+        if not customer_id:
+            return JSONResponse(status_code=400,
+                                content={"error": "No billing account yet — activate your subscription first."})
+
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=f"{PLATFORM_URL}/dashboard",
+        )
+        return JSONResponse(content={"url": session.url})
+    except stripe.error.StripeError as e:
+        return JSONResponse(status_code=502, content={"error": str(e)})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e), "type": type(e).__name__})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
