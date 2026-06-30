@@ -238,8 +238,8 @@ export default function TermsPage() {
         <h2 style={heading}>14. Contact</h2>
         <p style={body}>
           ThemisOS LLC<br />
-          5 West Mendenhall Street, Unit 316<br />
-          Bozeman, MT 59715<br />
+          PO Box 333<br />
+          Bozeman, MT 59771<br />
           <a className="inline-link" href="mailto:legal@themisos.ai">legal@themisos.ai</a>
         </p>
 
