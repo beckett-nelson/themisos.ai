@@ -25,25 +25,25 @@ const API_BASE =
 // Source of truth = the Stripe size coupons (percentage off, forever).
 // Preview math mirrors what Stripe will actually bill.
 const BANDS = [
-  { min: 1, max: 4, pct: 0, label: '1–4 seats', coupon: null },
-  { min: 5, max: 9, pct: 6, label: '5–9 seats', coupon: 'SIZE_5_9' },
-  { min: 10, max: 19, pct: 10, label: '10–19 seats', coupon: 'SIZE_10_19' },
-  { min: 20, max: 49, pct: 16, label: '20–49 seats', coupon: 'SIZE_20_49' },
+  { min: 1, max: 4, pct: 0, label: '1-4 seats', coupon: null },
+  { min: 5, max: 9, pct: 6, label: '5-9 seats', coupon: 'SIZE_5_9' },
+  { min: 10, max: 19, pct: 10, label: '10-19 seats', coupon: 'SIZE_10_19' },
+  { min: 20, max: 49, pct: 16, label: '20-49 seats', coupon: 'SIZE_20_49' },
   { min: 50, max: Infinity, pct: 22, label: '50+ seats', coupon: 'SIZE_50' },
 ];
 
 // Manual discount overrides. These REPLACE the size band (Stripe allows one
 // coupon per subscription). value must match the Stripe coupon ID exactly.
 const DISCOUNTS = [
-  { value: '', label: 'None — standard size pricing', coupon: null, pct: 0 },
-  { value: 'INTERNAL_100', label: 'Internal — 100% off (free)', coupon: 'INTERNAL_100', pct: 100 },
-  { value: 'MARKETING_5', label: 'Marketing partner — 5% off', coupon: 'MARKETING_5', pct: 5 },
+  { value: '', label: 'None - standard size pricing', coupon: null, pct: 0 },
+  { value: 'INTERNAL_100', label: 'Internal - 100% off (free)', coupon: 'INTERNAL_100', pct: 100 },
+  { value: 'MARKETING_5', label: 'Marketing partner - 5% off', coupon: 'MARKETING_5', pct: 5 },
 ];
 
 const TIERS = [
-  { value: '8', base: 20, label: '8 cases / mo — $20 per seat' },
-  { value: '20', base: 50, label: '20 cases / mo — $50 per seat' },
-  { value: '50', base: 100, label: '50 cases / mo — $100 per seat' },
+  { value: '8', base: 20, label: '8 cases / mo - $20 per seat' },
+  { value: '20', base: 50, label: '20 cases / mo - $50 per seat' },
+  { value: '50', base: 100, label: '50 cases / mo - $100 per seat' },
 ];
 
 function bandFor(seats: number) {
@@ -94,7 +94,7 @@ export default function OnboardFirmPage() {
     setCopied(false);
 
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ownerEmail.trim())) {
-      setError('That owner email doesn’t look right. Check it before sending the invite.');
+      setError("That owner email doesn't look right. Check it before sending the invite.");
       return;
     }
 
@@ -110,7 +110,7 @@ export default function OnboardFirmPage() {
           seats,
           tier,
           coupon: discount || null,
-          // organization_id intentionally omitted — endpoint creates the org.
+          // organization_id intentionally omitted - endpoint creates the org.
         }),
       });
 
@@ -148,7 +148,7 @@ export default function OnboardFirmPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      /* clipboard blocked — link is still visible to copy manually */
+      /* clipboard blocked - link is still visible to copy manually */
     }
   }
 
@@ -179,7 +179,7 @@ export default function OnboardFirmPage() {
           </label>
 
           <label className="onb__field">
-            <span className="onb__label">Billing owner — name</span>
+            <span className="onb__label">Billing owner - name</span>
             <input
               className="onb__input"
               value={ownerName}
@@ -190,7 +190,7 @@ export default function OnboardFirmPage() {
           </label>
 
           <label className="onb__field">
-            <span className="onb__label">Billing owner — email</span>
+            <span className="onb__label">Billing owner - email</span>
             <input
               className="onb__input"
               type="email"
@@ -245,7 +245,7 @@ export default function OnboardFirmPage() {
           </label>
 
           <button className="onb__cta" onClick={onboard} disabled={!canSubmit}>
-            {submitting ? 'Onboarding…' : 'Onboard firm'}
+            {submitting ? 'Onboarding...' : 'Onboard firm'}
           </button>
 
           {error && (
@@ -288,7 +288,7 @@ export default function OnboardFirmPage() {
 
           <p className="onb__note">
             {preview.usingOverride
-              ? 'A chosen discount replaces the automatic size coupon — Stripe allows one coupon per subscription. The charged amount in Stripe is the source of truth.'
+              ? 'A chosen discount replaces the automatic size coupon - Stripe allows one coupon per subscription. The charged amount in Stripe is the source of truth.'
               : 'Stripe applies the size coupon, so the charged amount is the source of truth. This mirrors that math.'}
           </p>
         </aside>
@@ -303,7 +303,7 @@ export default function OnboardFirmPage() {
               <span className="onb__rv">
                 {typeof result.monthly_total === 'number'
                   ? usd(result.monthly_total)
-                  : result.monthly_total ?? '—'}
+                  : result.monthly_total ?? '-'}
               </span>
             </div>
             <div>
