@@ -14,7 +14,7 @@ import { useMemo, useState } from 'react';
  * ASSUMPTIONS (confirm against onboarding.py request model, then tweak if needed):
  *   - API base: NEXT_PUBLIC_API_BASE, falling back to https://app.themisos.ai
  *   - Request keys: firm_name, owner_name, owner_email, seats, tier, coupon
- *   - tier value is the case cap as a string: "20" or "50"
+ *   - tier value is the case cap as a string: "8", "20", or "50"
  *   - Response: { checkout_url, monthly_total, discount_applied, emailed }
  *   - This page lives under your existing /admin gate (no auth added here)
  */
@@ -41,6 +41,7 @@ const DISCOUNTS = [
 ];
 
 const TIERS = [
+  { value: '8', base: 20, label: '8 cases / mo — $20 per seat' },
   { value: '20', base: 50, label: '20 cases / mo — $50 per seat' },
   { value: '50', base: 100, label: '50 cases / mo — $100 per seat' },
 ];
@@ -326,7 +327,7 @@ export default function OnboardFirmPage() {
                 <button className="onb__ghost" onClick={copyLink}>
                   {copied ? 'Copied' : 'Copy link'}
                 </button>
-                <a
+                
                   className="onb__ghost"
                   href={result.checkout_url}
                   target="_blank"
