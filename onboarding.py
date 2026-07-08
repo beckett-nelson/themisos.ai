@@ -14,6 +14,7 @@ Env vars:
   STRIPE_PRICE_ID        the $50 / 20-case price (used as the 20-case price)
   STRIPE_PRICE_20CASE    optional override for the 20-case price
   STRIPE_PRICE_50CASE    the $100 / 50-case price   <-- add this in Railway
+  STRIPE_PRICE_8CASE     the $20 / 8-case price     <-- add this in Railway
 
 Firm-size discount coupons (create these in Stripe with these exact IDs for discounts to apply):
   SIZE_5_9 = 6%,  SIZE_10_19 = 10%,  SIZE_20_49 = 16%,  SIZE_50 = 22%
@@ -44,6 +45,7 @@ PLATFORM_URL = "https://platform.themisos.ai"
 
 # tier -> display + base per-seat price (dollars)
 TIER_META = {
+    "8":  {"label": "8 Cases / month",  "rate": "$20",  "base": 20},
     "20": {"label": "20 Cases / month", "rate": "$50",  "base": 50},
     "50": {"label": "50 Cases / month", "rate": "$100", "base": 100},
 }
@@ -60,6 +62,8 @@ MANUAL_DISCOUNTS = {
 
 
 def _price_for_tier(tier: str) -> Optional[str]:
+    if tier == "8":
+        return os.environ.get("STRIPE_PRICE_8CASE")
     if tier == "20":
         return os.environ.get("STRIPE_PRICE_20CASE") or os.environ.get("STRIPE_PRICE_ID")
     if tier == "50":
@@ -276,7 +280,7 @@ class OnboardFirmRequest(BaseModel):
     owner_email: str
     firm_name: str
     seats: int = 1
-    tier: str = "20"               # "20" or "50"
+    tier: str = "20"               # "8", "20", or "50"
     owner_name: Optional[str] = None
     send_email: bool = True        # set false to just get the checkout URL back
     coupon: Optional[str] = None   # manual override, e.g. "INTERNAL_100" — replaces size band
@@ -285,7 +289,7 @@ class OnboardFirmRequest(BaseModel):
 @router.post("/onboard-firm")
 async def onboard_firm(req: OnboardFirmRequest):
     if req.tier not in TIER_META:
-        return JSONResponse(status_code=400, content={"error": "tier must be '20' or '50'."})
+        return JSONResponse(status_code=400, content={"error": "tier must be '8', '20', or '50'."})
 
     price_id = _price_for_tier(req.tier)
     if not stripe.api_key or not price_id:
