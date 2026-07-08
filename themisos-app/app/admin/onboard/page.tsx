@@ -327,7 +327,7 @@ export default function OnboardFirmPage() {
                 <button className="onb__ghost" onClick={copyLink}>
                   {copied ? 'Copied' : 'Copy link'}
                 </button>
-                
+                <a
                   className="onb__ghost"
                   href={result.checkout_url}
                   target="_blank"
