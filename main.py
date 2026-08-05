@@ -753,9 +753,6 @@ You will be told the document_type. Apply the lens that matters for that instrum
   limitation of liability and damages caps; indemnification (mutual vs. one-sided); IP ownership of
   deliverables; termination (for cause / convenience); SLAs; confidentiality; dispute resolution;
   assignment; force majeure.
-- contractor_agreement: independent-contractor status and misclassification risk; IP assignment;
-  scope and deliverables; payment; indemnification and insurance requirements; termination;
-  non-compete / non-solicit; confidentiality; the degree-of-control terms.
 - purchase_agreement: representations and warranties; indemnification with survival periods, caps, and
   baskets; conditions to closing; covenants; risk of loss; title and transfer; price, escrow, and
   holdback; "as-is" disclaimers; remedies; assignment; governing law.
@@ -763,6 +760,16 @@ You will be told the document_type. Apply the lens that matters for that instrum
   (member- vs. manager-managed); voting thresholds; transfer restrictions and rights of first refusal;
   buy-sell, drag-along, and tag-along; fiduciary duties and any waiver; dissolution; deadlock
   resolution; indemnification of members/managers.
+- resume: a CANDIDATE RESUME OR CV submitted for a legal-staff hiring decision (associate, paralegal,
+  law clerk, legal assistant, or administrative hire). This is a SCREENING review, not a contract
+  review — nothing is being signed and no party is being protected. Assess: bar admission(s),
+  jurisdiction, and current standing; degrees, certifications, and licensure; depth of substantive
+  practice-area experience measured against the role; hands-on litigation work (drafting, discovery,
+  depositions, motions, filings, trial) as distinct from mere exposure; caseload and docket-management
+  scale; proficiency with e-discovery, case-management, billing, and research platforms; employment
+  chronology, including unexplained gaps, short tenures, and overlapping dates; vague, inflated, or
+  unverifiable claims; writing quality and formatting care, which for a legal hire is itself a
+  substantive signal; and any conflict-of-interest exposure from prior firms or adverse parties.
 - other: apply general contract-review discipline — parties and recitals; each side's obligations and
   consideration; conditions; representations and warranties; indemnification; limitation of liability;
   term and termination; assignment; dispute resolution; governing law; and overall one-sidedness.
@@ -813,6 +820,43 @@ The concrete actions the reviewing party or counsel should take before signing o
 document — negotiate a specific term, add a missing protection, confirm enforceability under the
 controlling jurisdiction, calendar a deadline. Order by priority.
 
+────────────────────────────────────────────────────────
+RESUME REVIEW — FIELD MAPPING (applies ONLY when document_type is "resume")
+────────────────────────────────────────────────────────
+This section OVERRIDES the contract framing above. The JSON schema is unchanged; its fields carry
+hiring meanings:
+- document_grade: "I" = strong candidate, clearly qualified for the role; "II" = qualified, with
+  notable gaps worth probing in an interview; "III" = material concerns — thin experience,
+  credential problems, or an unexplained record.
+- favors: return null. It has no meaning for a resume.
+- strong_provisions: the candidate's genuine credentials and strengths. "provision" is the
+  credential or experience, "detail" is why it matters for a legal-staff role, "clause" is the
+  resume section (e.g. "Experience", "Education"), page_ref as normal.
+- weak_provisions: gaps and concerns. Map "issue" as: weak = thin or shallow experience;
+  missing = an expected credential or experience the resume does not show; one_sided = experience
+  so narrowly concentrated it limits fit; ambiguous = a vague or unverifiable claim;
+  unenforceable = a credential claim that appears inaccurate or cannot stand as stated. Use a null
+  page_ref only for something genuinely absent.
+- attorney_flags: hiring-manager flags — anything to verify before extending an offer. Use "urgent"
+  for bar-status or credential problems, conflict-of-interest exposure, or apparent
+  misrepresentation.
+- governing_terms: use these four keys INSTEAD of the contract keys —
+  "candidate" (name, or "not stated"), "current_role" (most recent title and employer),
+  "experience_summary" (total relevant years and practice areas),
+  "credentials" (degrees, bar admissions with jurisdiction and status, certifications).
+- deadlines: employment-timeline issues. "type" is one of: employment_gap | short_tenure |
+  overlapping_dates | date_inconsistency | other. "description" states the issue, "timeframe" gives
+  the dates involved. Return an empty list when the chronology is clean.
+- recommended_next_steps: what the hiring team should do next — the specific interview question to
+  probe a gap, the credential or reference to verify, the writing sample or skills test to request.
+
+NEVER assess a candidate on age, race, color, sex, gender identity, sexual orientation, national
+origin, religion, disability, pregnancy, marital or family status, veteran status, criminal history,
+or any other protected characteristic, and never infer any of these from names, graduation dates,
+schools, affiliations, or gaps. Assess only job-related qualifications, experience, and the internal
+consistency of the record. Where a gap or anomaly appears, describe it neutrally and route it to a
+follow-up question rather than speculating about its cause.
+
 You support attorney judgment; you never replace it. Always respond with valid JSON only — no prose,
 no markdown fences, no commentary outside the JSON."""
 
@@ -823,9 +867,9 @@ _DOC_TYPE_LABELS = {
     "renters_agreement": "Renters / Lease Agreement",
     "employment_contract": "Employment Contract",
     "service_agreement": "Service Agreement",
-    "contractor_agreement": "Independent Contractor Agreement",
     "purchase_agreement": "Purchase Agreement",
     "operating_agreement": "Operating / Partnership Agreement",
+    "resume": "Resume / CV",
     "other": "Other Document",
 }
 
@@ -838,9 +882,16 @@ def build_document_prompt(doc_chunk: str, document_type: str, context: str,
                           is_partial: bool = False) -> str:
     partial_note = "NOTE: This is an excerpt from a larger document. Assess what you can and do not infer the contents of pages you cannot see." if is_partial else ""
     type_label = _doc_type_label(document_type)
-    return f"""Review this document on behalf of the reviewing party. Grade it, identify the strong
+    if (document_type or "").strip().lower() == "resume":
+        task_line = """Screen this resume for a legal-staff hiring decision. Grade the candidate,
+identify their genuine credentials and strengths, surface gaps and concerns, flag anything that must
+be verified before an offer, capture the candidate profile and any employment-timeline issues, and
+recommend the hiring team's next steps. Apply the RESUME REVIEW field mapping."""
+    else:
+        task_line = """Review this document on behalf of the reviewing party. Grade it, identify the strong
 provisions, surface the weak / missing / one-sided provisions, flag anything unusual or predatory,
-capture governing terms and deadlines, and recommend next steps before signing or relying on it.
+capture governing terms and deadlines, and recommend next steps before signing or relying on it."""
+    return f"""{task_line}
 
 DOCUMENT TYPE: {type_label} (code: {document_type})
 Apply the review lens appropriate to this document type.
