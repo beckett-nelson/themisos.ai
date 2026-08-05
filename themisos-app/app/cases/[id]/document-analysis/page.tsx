@@ -11,6 +11,7 @@ type Case = {
   documents_analyzed: number
   recovery_identified: number
   created_at: string
+  last_document_analysis?: any
 }
 
 const DOC_TYPES = [
@@ -19,9 +20,9 @@ const DOC_TYPES = [
   { value: "renters_agreement", label: "Renters / Lease" },
   { value: "employment_contract", label: "Employment Contract" },
   { value: "service_agreement", label: "Service Agreement" },
-  { value: "contractor_agreement", label: "Independent Contractor" },
   { value: "purchase_agreement", label: "Purchase Agreement" },
   { value: "operating_agreement", label: "Operating / Partnership" },
+  { value: "resume", label: "Resume / CV" },
   { value: "other", label: "Other Document" },
 ]
 
@@ -31,9 +32,9 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   renters_agreement: "Renters / Lease Agreement",
   employment_contract: "Employment Contract",
   service_agreement: "Service Agreement",
-  contractor_agreement: "Independent Contractor Agreement",
   purchase_agreement: "Purchase Agreement",
   operating_agreement: "Operating / Partnership Agreement",
+  resume: "Resume / CV",
   other: "Other Document",
 }
 
@@ -125,7 +126,14 @@ export default function DocumentAnalysisPage() {
       const { data } = await supabase.from("cases").select("*").eq("id", params.id).single()
       if (!data) { router.push("/dashboard"); return }
       setCaseData(data)
-      if (data.last_document_analysis) setResults(data.last_document_analysis)
+      if (data.last_document_analysis) {
+        setResults(data.last_document_analysis)
+        // Restore the type the saved analysis was actually run against so
+        // labels and tabs match the stored result, not a stale default.
+        if (data.last_document_analysis.document_type_submitted) {
+          setDocumentType(data.last_document_analysis.document_type_submitted)
+        }
+      }
     }
     load()
   }, [])
@@ -135,7 +143,15 @@ export default function DocumentAnalysisPage() {
     setAnalyzing(true)
     setError("")
     setResults(null)
-    const stages = [
+    const stages = documentType === "resume" ? [
+      "Reading resume...",
+      "Identifying candidate and current role...",
+      "Reviewing experience and credentials...",
+      "Checking dates for gaps and overlaps...",
+      "Flagging inconsistencies and thin claims...",
+      "Grading overall candidate strength...",
+      "Compiling analysis...",
+    ] : [
       "Reading document...",
       "Identifying document type and parties...",
       "Reviewing provisions and protections...",
@@ -164,14 +180,17 @@ export default function DocumentAnalysisPage() {
       const resp = await fetch("https://app.themisos.ai/analyze-document", { method: "POST", body: fd })
       const data = await resp.json()
       if (!resp.ok || data.error) { setError(data.error || "Analysis failed"); setAnalyzing(false); return }
-      setResults(data)
+      // Stamp the submitted type onto the result so a reloaded analysis renders
+      // with the correct labels even if the toggle is later changed.
+      const stamped = { ...data, document_type_submitted: documentType }
+      setResults(stamped)
       // NOTE: recovery_identified is intentionally NOT written here.
       // Recovery is tracked ONLY by the cross-examine flow. Document Analysis
       // contributes to documents_analyzed (the cross-feature count) and persists
       // its own result in last_document_analysis.
       await supabase.from("cases").update({
         documents_analyzed: (caseData?.documents_analyzed || 0) + 1,
-        last_document_analysis: data
+        last_document_analysis: stamped
       }).eq("id", params.id)
       setCaseData(prev => prev ? { ...prev, documents_analyzed: (prev.documents_analyzed || 0) + 1 } : prev)
     } catch (e: any) {
@@ -188,21 +207,62 @@ export default function DocumentAnalysisPage() {
     </div>
   )
 
+  // ── Resume-aware labeling ──
+  // The result schema is identical for every document type; only the language changes.
+  const analyzedType = results?.document_type_submitted || documentType
+  const isResume = analyzedType === "resume"
+
   const gradeColor =
     results?.document_grade === "I" ? "#22c987" :
     results?.document_grade === "II" ? "#f0a030" :
     results?.document_grade === "III" ? "#ff5a5a" : "#60c8f0"
-  const gradeLabel =
-    results?.document_grade === "I" ? "I · Counsel Grade" :
-    results?.document_grade === "II" ? "II · Standard" :
-    results?.document_grade === "III" ? "III · At Risk" : "Unrated"
+  const gradeLabel = isResume
+    ? (results?.document_grade === "I" ? "I · Strong Candidate" :
+       results?.document_grade === "II" ? "II · Qualified" :
+       results?.document_grade === "III" ? "III · Concerns" : "Unrated")
+    : (results?.document_grade === "I" ? "I · Counsel Grade" :
+       results?.document_grade === "II" ? "II · Standard" :
+       results?.document_grade === "III" ? "III · At Risk" : "Unrated")
   const gradeBg =
     results?.document_grade === "I" ? "rgba(34,201,135,0.07)" :
     results?.document_grade === "II" ? "rgba(240,160,48,0.07)" :
     results?.document_grade === "III" ? "rgba(255,90,90,0.07)" : "rgba(96,200,240,0.07)"
 
+  const gradeHeading = isResume ? "Candidate Grade" : "Document Grade"
+  const strongHeading = isResume ? "Credentials & Strengths" : "Strong Provisions"
+  const weakHeading = isResume ? "Gaps & Concerns" : "Weak / Missing / One-Sided Provisions"
+  const flagsHeading = isResume ? "Screening Flags" : "Attorney Flags"
+  const profileTabLabel = isResume ? "Candidate Profile" : "Governing Terms"
+  const datesTabLabel = isResume ? "Dates & Gaps" : "Deadlines"
+
   const sevColor = (s: string) => s === "high" ? "#ff5a5a" : s === "medium" ? "#f0a030" : "#4f7cff"
   const gov = results?.governing_terms || {}
+
+  // Rows shown in the first tab, swapped by document type.
+  const profileRows = isResume ? [
+    { label: "Candidate", value: gov.candidate },
+    { label: "Current Role", value: gov.current_role },
+    { label: "Experience", value: gov.experience_summary },
+    { label: "Credentials / Admissions", value: gov.credentials },
+  ] : [
+    { label: "Governing Law", value: gov.governing_law },
+    { label: "Jurisdiction / Venue", value: gov.jurisdiction_venue },
+    { label: "Notice Requirements", value: gov.notice_requirements },
+    { label: "Key Dates", value: gov.key_dates },
+  ]
+  const hasProfileData = profileRows.some(r => r.value)
+
+  const uploadExamples = documentType === "resume"
+    ? ["Candidate resume or CV", "Expert witness curriculum vitae", "Attorney or paralegal application", "Consultant or vendor bio packet"]
+    : ["NDA or confidentiality agreement", "Insurance policy", "Lease or rental agreement", "Employment contract", "Service or vendor agreement", "Operating or partnership agreement"]
+
+  const uploadNote = documentType === "resume"
+    ? "No case file needed — this reviews the resume on its own terms. 5MB limit per file."
+    : "No case file needed — this reviews the document on its own terms. 5MB limit per file; if larger, upload the most relevant sections first."
+
+  const contextPlaceholder = documentType === "resume"
+    ? "e.g. Screening for a mid-level litigation associate. Flag thin trial experience, unexplained gaps, and any credential claims worth verifying..."
+    : "e.g. Reviewing on behalf of the receiving party. Flag any indefinite confidentiality terms and missing carve-outs..."
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#05090F", color: "#EDE6D0", fontFamily: "'Syne', sans-serif", fontSize: "14px" }}>
@@ -226,26 +286,28 @@ export default function DocumentAnalysisPage() {
           <div style={{ borderBottom: "2px solid #0d0f12", paddingBottom: "16px", marginBottom: "28px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <div style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.02em", fontFamily: "Georgia, serif" }}>Themis<span style={{ color: "#C9962B" }}>OS</span></div>
-              <div style={{ fontSize: "11px", color: "#666", marginTop: "3px", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "Arial, sans-serif" }}>Document Analysis Report · {DOC_TYPE_LABELS[documentType] || "Document"}</div>
+              <div style={{ fontSize: "11px", color: "#666", marginTop: "3px", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "Arial, sans-serif" }}>
+                {isResume ? "Resume Review" : "Document Analysis Report"} · {DOC_TYPE_LABELS[analyzedType] || "Document"}
+              </div>
             </div>
             <div style={{ textAlign: "right", fontSize: "12px", color: "#555", fontFamily: "Arial, sans-serif", lineHeight: 1.6 }}>
               <div style={{ fontWeight: 600, color: "#111" }}>{caseData.name}</div>
               {results.document_type_detected && <div>Detected: {results.document_type_detected}</div>}
-              {results.favors && <div>Favors: {results.favors}</div>}
+              {!isResume && results.favors && <div>Favors: {results.favors}</div>}
               <div>{new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
             </div>
           </div>
 
           {/* Grade */}
           <div style={{ marginBottom: "24px", padding: "14px 18px", background: "#f5f7fa", borderRadius: "6px", border: "1px solid #dde3ec" }}>
-            <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#555", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "6px" }}>Document Grade — {gradeLabel}</div>
+            <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#555", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "6px" }}>{gradeHeading} — {gradeLabel}</div>
             <div style={{ fontSize: "13px", color: "#222", fontFamily: "Arial, sans-serif", lineHeight: 1.7 }}>{results.grade_summary}</div>
           </div>
 
           {/* Strong provisions */}
           {results.strong_provisions?.length > 0 && (
             <div style={{ marginBottom: "24px" }}>
-              <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#111", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", borderBottom: "1px solid #ddd", paddingBottom: "4px" }}>Strong Provisions</div>
+              <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#111", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", borderBottom: "1px solid #ddd", paddingBottom: "4px" }}>{strongHeading}</div>
               {results.strong_provisions.map((p: any, i: number) => (
                 <div key={i} style={{ marginBottom: "8px", fontSize: "12px", fontFamily: "Arial, sans-serif", lineHeight: 1.6 }}>
                   <span style={{ fontWeight: 700, color: "#111" }}>{p.provision}{p.clause ? ` · ${p.clause}` : ""}:</span> {p.detail} {p.page_ref ? `(${p.page_ref})` : ""}
@@ -257,7 +319,7 @@ export default function DocumentAnalysisPage() {
           {/* Weak provisions */}
           {results.weak_provisions?.length > 0 && (
             <div style={{ marginBottom: "24px" }}>
-              <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#111", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", borderBottom: "1px solid #ddd", paddingBottom: "4px" }}>Weak / Missing / One-Sided Provisions</div>
+              <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#111", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", borderBottom: "1px solid #ddd", paddingBottom: "4px" }}>{weakHeading}</div>
               {results.weak_provisions.map((p: any, i: number) => (
                 <div key={i} style={{ marginBottom: "8px", fontSize: "12px", fontFamily: "Arial, sans-serif", lineHeight: 1.6 }}>
                   <span style={{ fontWeight: 700, color: "#111" }}>{p.provision}{p.clause ? ` · ${p.clause}` : ""} <span style={{ fontWeight: 400, color: "#888" }}>[{(p.issue || "").replace(/_/g, " ")} · {p.severity}]</span>:</span> {p.detail} {p.page_ref ? `(${p.page_ref})` : "—"}
@@ -266,21 +328,20 @@ export default function DocumentAnalysisPage() {
             </div>
           )}
 
-          {/* Governing terms */}
-          {gov && (gov.governing_law || gov.jurisdiction_venue || gov.notice_requirements || gov.key_dates) && (
+          {/* Governing terms / candidate profile */}
+          {hasProfileData && (
             <div style={{ marginBottom: "24px" }}>
-              <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#111", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", borderBottom: "1px solid #ddd", paddingBottom: "4px" }}>Governing Terms</div>
-              {gov.governing_law && <div style={{ fontSize: "12px", fontFamily: "Arial, sans-serif", lineHeight: 1.6 }}><strong>Governing Law:</strong> {gov.governing_law}</div>}
-              {gov.jurisdiction_venue && <div style={{ fontSize: "12px", fontFamily: "Arial, sans-serif", lineHeight: 1.6 }}><strong>Jurisdiction / Venue:</strong> {gov.jurisdiction_venue}</div>}
-              {gov.notice_requirements && <div style={{ fontSize: "12px", fontFamily: "Arial, sans-serif", lineHeight: 1.6 }}><strong>Notice Requirements:</strong> {gov.notice_requirements}</div>}
-              {gov.key_dates && <div style={{ fontSize: "12px", fontFamily: "Arial, sans-serif", lineHeight: 1.6 }}><strong>Key Dates:</strong> {gov.key_dates}</div>}
+              <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#111", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", borderBottom: "1px solid #ddd", paddingBottom: "4px" }}>{profileTabLabel}</div>
+              {profileRows.map((row, i) => row.value ? (
+                <div key={i} style={{ fontSize: "12px", fontFamily: "Arial, sans-serif", lineHeight: 1.6 }}><strong>{row.label}:</strong> {row.value}</div>
+              ) : null)}
             </div>
           )}
 
-          {/* Deadlines */}
+          {/* Deadlines / dates & gaps */}
           {results.deadlines?.length > 0 && (
             <div style={{ marginBottom: "24px" }}>
-              <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#b00020", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", borderBottom: "1px solid #ddd", paddingBottom: "4px" }}>Deadlines</div>
+              <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#b00020", fontFamily: "Arial, sans-serif", fontWeight: 700, marginBottom: "10px", borderBottom: "1px solid #ddd", paddingBottom: "4px" }}>{datesTabLabel}</div>
               {results.deadlines.map((d: any, i: number) => (
                 <div key={i} style={{ marginBottom: "8px", fontSize: "12px", fontFamily: "Arial, sans-serif", lineHeight: 1.6 }}>
                   <span style={{ fontWeight: 700, color: "#111", textTransform: "capitalize" }}>{(d.type || "").replace(/_/g, " ")}:</span> {d.description} — <em>{d.timeframe}</em> {d.page_ref ? `(${d.page_ref})` : ""}
@@ -304,7 +365,7 @@ export default function DocumentAnalysisPage() {
           )}
 
           <div style={{ marginTop: "48px", paddingTop: "12px", borderTop: "1px solid #ddd", fontSize: "10px", color: "#aaa", textAlign: "center", fontFamily: "Arial, sans-serif" }}>
-            Generated by ThemisOS · Confidential Attorney Work Product · {new Date().toLocaleDateString()}
+            Generated by ThemisOS · {isResume ? "Confidential — Internal Hiring Use Only" : "Confidential Attorney Work Product"} · {new Date().toLocaleDateString()}
           </div>
         </div>
       )}
@@ -448,7 +509,7 @@ export default function DocumentAnalysisPage() {
               <div style={{ padding: "11px 16px", borderBottom: "1px solid #1A2E4A", display: "flex", alignItems: "center", gap: "8px", background: "#0d1526", position: "relative" }}>
                 <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#C9962B", flexShrink: 0 }}></div>
                 <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9A927E", fontFamily: "'Syne', sans-serif" }}>
-                  Document
+                  {documentType === "resume" ? "Resume" : "Document"}
                 </span>
                 {/* ? button */}
                 <button
@@ -462,14 +523,14 @@ export default function DocumentAnalysisPage() {
                     <div>
                       <div style={{ fontFamily: "'Syne', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#C9962B", marginBottom: "8px" }}>What to upload</div>
                       <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
-                        {["NDA or confidentiality agreement", "Insurance policy", "Lease or rental agreement", "Employment contract", "Service or vendor agreement", "Operating or partnership agreement"].map(item => (
+                        {uploadExamples.map(item => (
                           <li key={item} style={{ fontSize: "12px", color: "#9A927E", fontFamily: "Georgia, serif", fontStyle: "italic", display: "flex", gap: "8px", alignItems: "flex-start" }}>
                             <span style={{ color: "#7A5A18", flexShrink: 0, marginTop: "1px" }}>—</span>{item}
                           </li>
                         ))}
                       </ul>
                       <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #1A2E4A", fontSize: "11px", color: "#6E7D94", fontFamily: "'Syne', sans-serif", lineHeight: 1.6 }}>
-                        No case file needed — this reviews the document on its own terms. 5MB limit per file; if larger, upload the most relevant sections first.
+                        {uploadNote}
                       </div>
                     </div>
                   } />
@@ -486,7 +547,7 @@ export default function DocumentAnalysisPage() {
                   )}
                 </div>
                 <div style={{ fontSize: "13px", fontFamily: "Georgia, serif", fontStyle: "italic", color: docFile ? "#22c987" : "#9A927E", marginBottom: "4px" }}>
-                  {docFile ? docFile.name : "Drop document here"}
+                  {docFile ? docFile.name : (documentType === "resume" ? "Drop resume here" : "Drop document here")}
                 </div>
                 {!docFile && <div style={{ fontSize: "12px", color: "#6E7D94", fontFamily: "'Syne', sans-serif" }}>Click to browse</div>}
                 <div style={{ fontSize: "11px", color: "#3A4A5E", marginTop: "8px", fontFamily: "'Syne', sans-serif", letterSpacing: "0.04em" }}>PDF · TXT · DOCX — 5MB max</div>
@@ -512,7 +573,7 @@ export default function DocumentAnalysisPage() {
             <textarea
               value={context}
               onChange={e => setContext(e.target.value)}
-              placeholder="e.g. Reviewing on behalf of the receiving party. Flag any indefinite confidentiality terms and missing carve-outs..."
+              placeholder={contextPlaceholder}
               style={{ width: "100%", display: "block", background: "transparent", border: "none", outline: "none", color: "#EDE6D0", fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "13px", padding: "14px 16px", resize: "vertical", minHeight: "72px", lineHeight: 1.6 }}
             />
           </div>
@@ -548,7 +609,7 @@ export default function DocumentAnalysisPage() {
                 <span style={{ display: "inline-block", width: "13px", height: "13px", border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "#C9962B", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                 {statusMsg}
               </span>
-            ) : "Run Document Analysis"}
+            ) : (documentType === "resume" ? "Run Resume Analysis" : "Run Document Analysis")}
           </button>
 
           {/* ── RESULTS ── */}
@@ -562,18 +623,18 @@ export default function DocumentAnalysisPage() {
                 background: gradeBg,
               }}>
                 <div style={{ flexShrink: 0 }}>
-                  <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#6E7D94", marginBottom: "6px", fontFamily: "'Syne', sans-serif" }}>Document Grade</div>
+                  <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#6E7D94", marginBottom: "6px", fontFamily: "'Syne', sans-serif" }}>{gradeHeading}</div>
                   <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.5rem", fontWeight: 600, color: gradeColor }}>{gradeLabel}</div>
-                  {results.favors && <div style={{ fontSize: "11px", color: "#6E7D94", fontFamily: "'Syne', sans-serif", marginTop: "4px", letterSpacing: "0.04em" }}>Favors: {results.favors}</div>}
+                  {!isResume && results.favors && <div style={{ fontSize: "11px", color: "#6E7D94", fontFamily: "'Syne', sans-serif", marginTop: "4px", letterSpacing: "0.04em" }}>Favors: {results.favors}</div>}
                 </div>
                 <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "14px", color: "#9A927E", lineHeight: 1.7, flex: 1 }}>{results.grade_summary}</div>
                 <DownloadReportButton caseData={caseData} />
               </div>
 
-              {/* Strong provisions */}
+              {/* Strong provisions / credentials */}
               {results.strong_provisions?.length > 0 && (
                 <div style={{ background: "#0A1220", border: "1px solid #1A2E4A", borderRadius: "3px", padding: "20px 24px", marginBottom: "24px" }}>
-                  <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#22c987", marginBottom: "16px", fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>Strong Provisions</div>
+                  <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#22c987", marginBottom: "16px", fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>{strongHeading}</div>
                   {results.strong_provisions.map((p: any, i: number) => (
                     <div key={i} style={{ padding: "12px 16px", background: "#0d1526", border: "1px solid #1A2E4A", borderLeft: "3px solid #22c987", borderRadius: "0 3px 3px 0", marginBottom: "8px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", marginBottom: "4px" }}>
@@ -587,10 +648,10 @@ export default function DocumentAnalysisPage() {
                 </div>
               )}
 
-              {/* Weak / missing / one-sided provisions */}
+              {/* Weak provisions / gaps & concerns */}
               {results.weak_provisions?.length > 0 && (
                 <div style={{ background: "#0A1220", border: "1px solid #1A2E4A", borderRadius: "3px", padding: "20px 24px", marginBottom: "24px" }}>
-                  <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#f0a030", marginBottom: "16px", fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>Weak / Missing / One-Sided Provisions</div>
+                  <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#f0a030", marginBottom: "16px", fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>{weakHeading}</div>
                   {results.weak_provisions.map((p: any, i: number) => (
                     <div key={i} style={{ padding: "12px 16px", background: "#0d1526", border: "1px solid #1A2E4A", borderLeft: "3px solid " + sevColor(p.severity), borderRadius: "0 3px 3px 0", marginBottom: "8px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", marginBottom: "4px" }}>
@@ -607,10 +668,10 @@ export default function DocumentAnalysisPage() {
                 </div>
               )}
 
-              {/* Attorney flags */}
+              {/* Attorney / screening flags */}
               {results.attorney_flags?.length > 0 && (
                 <div style={{ background: "#0A1220", border: "1px solid #1A2E4A", borderRadius: "3px", padding: "20px 24px", marginBottom: "24px" }}>
-                  <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#9A927E", marginBottom: "12px", fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>Attorney Flags</div>
+                  <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#9A927E", marginBottom: "12px", fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>{flagsHeading}</div>
                   {results.attorney_flags.map((f: any, i: number) => (
                     <div key={i} style={{ padding: "12px 16px", background: "#0d1526", borderRadius: "0 3px 3px 0", marginBottom: "8px", borderLeft: "3px solid " + (f.priority === "urgent" ? "#ff5a5a" : f.priority === "review" ? "#f0a030" : "#4f7cff") }}>
                       <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em", color: f.priority === "urgent" ? "#ff5a5a" : f.priority === "review" ? "#f0a030" : "#4f7cff", marginBottom: "4px", fontFamily: "'Syne', sans-serif" }}>{f.priority}</div>
@@ -620,7 +681,7 @@ export default function DocumentAnalysisPage() {
                 </div>
               )}
 
-              {/* Tabs: governing / deadlines / steps */}
+              {/* Tabs: governing (or candidate profile) / deadlines (or dates & gaps) / steps */}
               <div style={{ display: "flex", gap: "2px", background: "#0d1526", border: "1px solid #1A2E4A", borderRadius: "3px", padding: "3px", marginBottom: "20px" }}>
                 {["governing", "deadlines", "steps"].map(tab => (
                   <button key={tab} onClick={() => setActiveTab(tab)} style={{
@@ -633,20 +694,15 @@ export default function DocumentAnalysisPage() {
                     fontSize: "11px", cursor: "pointer", fontWeight: activeTab === tab ? 600 : 400,
                     letterSpacing: "0.06em", textTransform: "uppercase", transition: "all 0.2s",
                   }}>
-                    {tab === "governing" ? "Governing Terms" : tab === "deadlines" ? "Deadlines" : "Next Steps"}
+                    {tab === "governing" ? profileTabLabel : tab === "deadlines" ? datesTabLabel : "Next Steps"}
                   </button>
                 ))}
               </div>
 
               {activeTab === "governing" && (
                 <div style={{ background: "#0A1220", border: "1px solid #1A2E4A", borderRadius: "3px", overflow: "hidden" }}>
-                  {[
-                    { label: "Governing Law", value: gov.governing_law },
-                    { label: "Jurisdiction / Venue", value: gov.jurisdiction_venue },
-                    { label: "Notice Requirements", value: gov.notice_requirements },
-                    { label: "Key Dates", value: gov.key_dates },
-                  ].map((row, i) => (
-                    <div key={i} style={{ display: "flex", borderBottom: i < 3 ? "1px solid #1A2E4A" : "none" }}>
+                  {profileRows.map((row, i) => (
+                    <div key={i} style={{ display: "flex", borderBottom: i < profileRows.length - 1 ? "1px solid #1A2E4A" : "none" }}>
                       <div style={{ width: "200px", flexShrink: 0, padding: "12px 16px", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#6E7D94", fontFamily: "'Syne', sans-serif", fontWeight: 700, background: "#0d1526" }}>{row.label}</div>
                       <div style={{ padding: "12px 16px", fontSize: "13px", fontFamily: "Georgia, serif", color: "#EDE6D0", lineHeight: 1.6 }}>{row.value || "—"}</div>
                     </div>
@@ -657,8 +713,12 @@ export default function DocumentAnalysisPage() {
               {activeTab === "deadlines" && (
                 (results.deadlines || []).length === 0
                   ? <div style={{ background: "#0A1220", border: "1px solid #1A2E4A", borderRadius: "0 3px 3px 0", padding: "14px 18px", borderLeftWidth: "3px", borderLeftColor: "#22c987" }}>
-                    <div style={{ fontSize: "14px", fontWeight: 600, fontFamily: "'Cormorant Garamond', serif", color: "#ffffff" }}>No embedded deadlines identified</div>
-                    <div style={{ fontSize: "13px", fontFamily: "Georgia, serif", fontStyle: "italic", color: "#9A927E", marginTop: "4px" }}>No dated or time-bound obligations were found in the document.</div>
+                    <div style={{ fontSize: "14px", fontWeight: 600, fontFamily: "'Cormorant Garamond', serif", color: "#ffffff" }}>
+                      {isResume ? "No date issues identified" : "No embedded deadlines identified"}
+                    </div>
+                    <div style={{ fontSize: "13px", fontFamily: "Georgia, serif", fontStyle: "italic", color: "#9A927E", marginTop: "4px" }}>
+                      {isResume ? "The employment timeline is continuous with no unexplained gaps or overlaps." : "No dated or time-bound obligations were found in the document."}
+                    </div>
                   </div>
                   : (results.deadlines || []).map((d: any, i: number) => (
                     <div key={i} style={{ padding: "12px 16px", background: "#0d1526", border: "1px solid #1A2E4A", borderLeft: "3px solid #ff5a5a", borderRadius: "0 3px 3px 0", marginBottom: "8px" }}>
