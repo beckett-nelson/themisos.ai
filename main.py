@@ -169,8 +169,8 @@ def safe_parse_document(raw: str) -> dict:
 
 
 async def send_notification_email(case_name: str, user_email: str, firm_name: str, analyses_run: int):
-    sendgrid_key = os.environ.get("SENDGRID_API_KEY")
-    if not sendgrid_key:
+    resend_key = os.environ.get("RESEND_API_KEY")
+    if not resend_key:
         return
 
     is_first = analyses_run == 1
@@ -211,16 +211,16 @@ async def send_notification_email(case_name: str, user_email: str, firm_name: st
 
     async with httpx.AsyncClient() as client:
         await client.post(
-            "https://api.sendgrid.com/v3/mail/send",
+            "https://api.resend.com/emails",
             headers={
-                "Authorization": f"Bearer {sendgrid_key}",
+                "Authorization": f"Bearer {resend_key}",
                 "Content-Type": "application/json"
             },
             json={
-                "personalizations": [{"to": [{"email": "beckett@themisos.ai"}]}],
-                "from": {"email": "noreply@themisos.ai", "name": "ThemisOS"},
+                "to": ["beckett@themisos.ai"],
+                "from": "ThemisOS <noreply@themisos.ai>",
                 "subject": subject,
-                "content": [{"type": "text/html", "value": html}]
+                "html": html
             }
         )
 
@@ -2132,7 +2132,7 @@ async def health():
         "status": "ok",
         "api_key_set": bool(os.environ.get("ANTHROPIC_API_KEY")),
         "supabase_configured": bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_ROLE_KEY")),
-        "sendgrid_configured": bool(os.environ.get("SENDGRID_API_KEY"))
+        "resend_configured": bool(os.environ.get("RESEND_API_KEY"))
     }
 
 app.include_router(billing_router)

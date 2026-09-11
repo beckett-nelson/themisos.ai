@@ -9,7 +9,7 @@ Endpoints:
                                    One call does the whole thing.
 
 Env vars:
-  SENDGRID_API_KEY
+  RESEND_API_KEY
   STRIPE_SECRET_KEY
   STRIPE_PRICE_ID        the $50 / 20-case price (used as the 20-case price)
   STRIPE_PRICE_20CASE    optional override for the 20-case price
@@ -85,18 +85,18 @@ def _band_for_seats(seats: int):
 
 
 async def _send_branded_email(to_email: str, subject: str, html: str):
-    sendgrid_key = os.environ.get("SENDGRID_API_KEY")
-    if not sendgrid_key:
-        return False, "SENDGRID_API_KEY not set."
+    resend_key = os.environ.get("RESEND_API_KEY")
+    if not resend_key:
+        return False, "RESEND_API_KEY not set."
     async with httpx.AsyncClient() as client:
         res = await client.post(
-            "https://api.sendgrid.com/v3/mail/send",
-            headers={"Authorization": f"Bearer {sendgrid_key}", "Content-Type": "application/json"},
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
             json={
-                "personalizations": [{"to": [{"email": to_email}]}],
-                "from": {"email": FROM_EMAIL, "name": "ThemisOS"},
+                "to": [to_email],
+                "from": f"ThemisOS <{FROM_EMAIL}>",
                 "subject": subject,
-                "content": [{"type": "text/html", "value": html}],
+                "html": html,
             },
         )
     if res.status_code in (200, 202):
